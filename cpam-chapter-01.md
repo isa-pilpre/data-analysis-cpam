@@ -4,25 +4,25 @@
 
 Le système d'assurance maladie en France (CPAM) met à disposition du public des jeux de données en open data via leur site data.ameli.fr :
 
-![][image1]
+![image1]
 
 En cliquant sur '**Data pathologies**', une page explicative s'affiche, précisant :
 
 > « L'Assurance Maladie met à disposition du grand public un ensemble de données sur une cinquantaine de pathologies, traitements chroniques et épisodes de soins : diabète, syndrome coronaire aigu, insuffisance cardiaque, AVC aigu, cancer du sein, cancer du poumon, maladie de Parkinson, épilepsie, mucoviscidose, traitements anxiolytiques, maternité, etc. Quels sont les effectifs de patients pris en charge pour ces différentes pathologies ? Comment évolue la prévalence ? Comment l'effectif est-il réparti sur le territoire français ? Quelles sont les dépenses remboursées affectées à chacune des pathologies identifiées ? »
 
-![][image2]
+![image2]
 
 Bien que de nombreux graphiques et visualisations interactives soient déjà disponibles sur cette page, je choisis de réaliser ma propre analyse des données. Pour ce faire, je clique sur l'onglet '**Données complètes**', où un jeu de données m'intéresse particulièrement :
 
-![][image3]
+![image3]
 
 Lorsque je clique dessus, les métadonnées indiquent qu'il s'agit d'un jeu de données couvrant les années 2015 à 2022, récemment actualisé en juillet 2024, ce qui est une bonne nouvelle :
 
-![][image4]
+![image4]
 
 Ce jeu de données concerne les effectifs de patients pris en charge par la CPAM selon les années, les pathologies, les tranches d'âge, le sexe et les territoires (régions et départements) :
 
-![][image5]
+![image5]
 
 Ce jeu va me donner l'occasion d'appliquer mes nouvelles compétences en analyse de données à l'aide de SQL, BigQuery, R et Tableau. Voici ci-après le déroulé de mon analyse.
 
@@ -40,41 +40,41 @@ J'affinerai sans doute ces questions à mesure que j'avance dans mon analyse, ma
 
 Ce jeu de données est disponible dans différents formats, y compris CSV, JSON, Excel et Parquet. Je choisis le format CSV, car c'est celui qui m'est le plus familier.
 
-![][image6]
+![image6]
 *fig6. Jeu de données de la CPAM en plusieurs formats*
 
 Le fichier CSV fait tout de même 800 Mo, ce qui dépasse les capacités d'Excel ou de Google Sheets. Je préfère ne pas surcharger les ressources de mon propre ordinateur, aussi je décide d'aller sur Google Cloud Storage (GCS) pour stocker mon jeu de données. C'est la solution la plus pratique pour moi, car GSC est étroitement intégré à BigQuery, que j'ai déjà utilisé plusieurs fois dans le cadre de ma formation de Data Analyste. Après m'être inscrite sur Google Cloud Platform, je suis prête à commencer. *'Welcome'*, me claironne le système alors que je navigue à travers la configuration initiale.
 
-![][image7]
+![image7]
 *fig7. Page de bienvenue de Google Cloud*
 
 Lorsque j'ouvre ma console Google, je vois que BigQuery et Cloud Storage sont tous deux situés dans le même panneau de navigation à gauche, aux côtés de SQL et de plusieurs autres services, ce qui est très pratique. Sur le côté droit de l'écran, je remarque que le système m'a attribué un nom de projet, *'My First Project'*, et un ID de projet étrangement nommé *'alien-oarlock-428016-f3'* :
 
-![][image8]
+![image8]
 *fig8. Google console*
 
 Je transfère mon fichier CSV original, que j'ai nommé `CPAM_effectifs_2024_July.csv`, dans un nouveau *Bucket* que j'ai créé sur Google Cloud Storage. Ensuite, je dois le rendre accessible dans BigQuery pour l'analyse.
 
-# Accès dans BigQuery
+### Accès dans BigQuery
 
 Je navigue vers l'interface de BigQuery et repère mon ID de projet, `alien-oarlock-428016-f3`, dans le panneau Explorer à gauche de l'écran. À côté de l'ID de projet, je clique sur le menu à trois points verticaux et sélectionne *'Create dataset'*.
 
-![][image9]
+![image9]
 
 Une fenêtre s'affiche, avec l'ID de projet déjà renseigné. Je tape `french_cpam` dans la zone de texte Dataset ID :
 
-![][image10]
+![image10]
 
 Désormais, je vois que sous mon ID de projet, le dataset nouvellement créé `french_cpam` apparaît.
 
 Ensuite, je clique à nouveau sur le menu à trois points verticaux, mais à côté de l'ID du dataset cette fois, et je sélectionne *'Create table'*.
 
-![][image11]
+![image11]
 
 Dans la fenêtre contextuelle qui s'affiche, je définis la source sur *'Google Cloud Storage'* et je recherche le fichier CSV que je viens de transférer. Dans la section de destination, l'ID de projet '*alien-oarlock-428016-f3'* et l'ID de dataset '*french\_cpam'* sont déjà prédéfinis.
 Je nomme la table *'cpam\_effectifs\_july\_2024'* et sélectionne *'Auto detect'* (détection automatique) pour laisser le système détecter automatiquement la structure de mon fichier, ce qui simplifie la configuration. Enfin, je clique sur *'Create table*' pour finaliser le processus :
 
-![][image12]
+![image12]
 
 Aïe. Je tombe sur un obstacle.
 
@@ -103,17 +103,17 @@ Maintenant que mon jeu de données est configuré sous forme de table dans BigQu
 
 Commençons par examiner le modèle de données et les 100 premières lignes de la table pour avoir un aperçu préliminaire. Il existe plusieurs façons de procéder. La plus immédiate, c'est de consulter le site de la CPAM où j'ai téléchargé mes données :
 
-![][image13]
+![image13]
 
 Sous le premier onglet *'Informations'*, si je fais défiler la page vers le bas jusqu'à *'Modèle de données',* je peux glaner beaucoup d'informations fondamentales sur les données et les différentes colonnes de la table.
 
 Également, je peux aller sur le deuxième onglet intitulé *'Tableau'* pour visualiser les premières lignes du jeu de données :
 
-![][image14]
+![image14]
 
 Lorsque j'examine les premières lignes de la table et le modèle de données fourni, je découvre que le jeu de données se compose d'une grande table avec une douzaine de colonnes. Voici un aperçu des principales colonnes, avec leur type de données :
 
-* `annee` : les années que couvre cette période d'analyse, qui s'étendent actuellement de 2015 à 2022\. *Type : date*
+* `annee` : les années que couvre cette période d'analyse, qui s'étendent actuellement de 2015 à 2022. *Type : date*
 * `patho_niv1`, `patho_niv2`, `patho_niv3` : groupe ou sous-groupe de pathologies (ou traitements chroniques ou épisodes de soins). *Type : texte*
 * `top` : libellé technique de la pathologie. Ex. “CAN\_CAT\_CAT”. *Type : texte*
 * `cla_age_5` : Classe d'âge (5 ans). Ex: 30-34. *Type : texte*
@@ -135,13 +135,13 @@ La prévalence englobe aussi bien les nouveaux cas que les cas déjà déclarés
 
 Contrairement à l'incidence (qui mesure uniquement le taux de nouveaux cas), la prévalence dépend de la durée de la maladie.
 
-Dans ce jeu de données, le champ '**prev**' représente la prévalence, calculée comme le ratio de '**Ntop**' (le nombre de personnes recevant des soins pour une pathologie spécifique) sur '**Npop**' (la population de référence pour cette pathologie) :
+Dans ce jeu de données, le champ `prev` représente la prévalence, calculée comme le ratio de `Ntop` (le nombre de personnes recevant des soins pour une pathologie spécifique) sur `Npop` (la population de référence pour cette pathologie) :
 
 ```math
 prévalence=\frac{Ntop}{Npop}
 ```
 
-C'est pourquoi le champ de prévalence '**prev**' a un type de données 'float' ou décimal, ce qui signifie qu'il s'agit d'une valeur décimale.
+C'est pourquoi le champ de prévalence `prev` a un type de données 'float' ou décimal, ce qui signifie qu'il s'agit d'une valeur décimale.
 
 Par exemple, si 3 000 personnes reçoivent des soins pour des troubles psychiatriques au cours d'une année donnée dans une région spécifique avec une population de référence de 100 000 personnes, la prévalence serait :
 
@@ -228,9 +228,9 @@ WHERE
 
 Résultats :
 
-| Row | number_of_columns |
-| :---- | :---- |
-| 1 | 16 |
+Row  | number_of_columns |
+---- | ---- |
+1    | 16 |
 
 La table contient 16 colonnes, ce qui me paraît beaucoup. Pour vérifier ce résultat, affichons le nom de toutes les colonnes :
 
@@ -245,88 +245,95 @@ WHERE
 
 Résultats :
 
-| 1  | annee |
-| :---- | :---- | :---- |
-| 2  | patho niv1 |
-| 3  | patho niv2 |
-| 4  | patho niv3 |
-| 5  | top |
-| 6  | cla\_age\_5 |
-| 7  | sexe |
-| 8  | region |
-| 9  | dept |
-| 10  | Ntop |
-| 11  | Npop |
-| 12  | prev |
-| 13  | Niveau prioritaire |
-| 14  | libelle classe age |
-| 15  | libelle\_sexe |
-| 16  | tri |
+Row  | annee |
+---- | ---- |
+ 2   | patho niv1 |
+ 3   | patho niv2 |
+ 4   | patho niv3 |
+ 5   | top |
+ 6   | cla_age_5 |
+ 7   | sexe |
+ 8   | region |
+ 9   | dept |
+ 10  | Ntop |
+ 11  | Npop |
+ 12  | prev |
+ 13  | Niveau prioritaire |
+ 14  | libelle classe age |
+ 15  | libelle_sexe |
+ 16  | tri |
 
 Ce résultat semble en fait valide, car il correspond à ce qui est affiché sur le site de la CPAM. Cependant, pour mon projet d'analyse de données, certaines colonnes ne semblent pas pertinentes. À savoir :
 
-– 'Niveau prioritaire' (Ex : 1, 2, 3\) \-\> aucune explication supplémentaire
-– 'tri' (Ex. 8\) \-\> aucune explication supplémentaire sur le site de la CPAM
-\- 'libelle classe age' (Ex. '30 à 34 ans') \-\> cela n'apporte rien par rapport à 'cla\_age\_5' (Ex. '30-34).
+* '`Niveau prioritaire`' (Ex : 1, 2, 3) : aucune explication supplémentaire
+* '`tri`' (Ex. 8) : aucune explication supplémentaire sur le site de la CPAM
+* '`libelle classe age`' (Ex. '30 à 34 ans') : cela n'apporte rien par rapport à '`cla_age_5`' (Ex. '30-34).
 
 Je vais donc bientôt supprimer ces colonnes et me concentrer sur les autres plus pertinentes.
 
-### 3\. Aperçu initial
+### 3. Aperçu initial
 
 Examinons les 100 premières lignes dans BigQuery :
 
-`SELECT *`
-
-`FROM alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024`
-`LIMIT 100;`
+```sql
+SELECT
+    *
+FROM
+    alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
+LIMIT 100;
+```
 
 Results:
 
-L'aperçu des données révèle des points intéressants. Notamment, les 3 colonnes des pathologies (niveau 1, 2 et 3\) contiennent des cellules avec la valeur *"Total consommants tous régimes"*. Cela ne spécifie pas une pathologie particulière, mais semble plutôt agréger les données pour toutes les pathologies. Pour ces entrées, les champs **Ntop** (nombre de patients traités) et **Npop** (population de référence) affichent le même nombre (10 970\) pour le groupe d'âge 0-4 ans, aboutissant à un taux de prévalence calculé de 100 %.
+L'aperçu des données révèle des points intéressants. Notamment, les 3 colonnes des pathologies (niveau 1, 2 et 3) contiennent des cellules avec la valeur *"Total consommants tous régimes"*. Cela ne spécifie pas une pathologie particulière, mais semble plutôt agréger les données pour toutes les pathologies. Pour ces entrées, les champs `Ntop` (nombre de patients traités) et `Npop` (population de référence) affichent le même nombre (10 970) pour le groupe d'âge 0-4 ans, aboutissant à un taux de prévalence calculé de 100 %.
 
 De manière similaire à d'autres indicateurs agrégés (comme *'9'* représentant *'tous les sexes'*, *'999'* pour *'tous les départements'*, et *'99'* pour '*toutes les régions'*), la valeur *"Total consommants tous régimes"* dans les colonnes de pathologie semble représenter un récapitulatif pour l'ensemble de la population.
 
 Ainsi donc, **certaines lignes agrègent les données** plutôt que d'afficher des enregistrements individuels. C'est un point important à noter, car je ne voudrais pas de doublons lors de l'analyse des données ultérieurement.
 
-### 4\. Répartition des données
+### 4. Répartition des données
 
 Je souhaite afficher toutes les valeurs distinctes présentes dans chaque colonne clé, comme les colonnes de pathologies, régions, départements et groupes d'âge.
 
 Commençons par patho\_niv1 pour lister toutes les pathologies distinctes de
 niveau 1:
 
-`SELECT DISTINCT patho_niv1 FROM alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024;`
+```sql
+SELECT
+    DISTINCT patho_niv1
+FROM
+    alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024;
+```
 
 **Results:**
 
-| Row  | patho_niv1 |
-| ---- | ----- |
-| 1   | Affections de longue durée (dont 31 et 32\) pour d'autres causes |
-| 2   | Cancers |
-| 3   | Diabète |
-| 4   | Hospitalisations hors pathologies repérées (avec ou sans pathologies, traitements ou maternité) |
-| 5   | Maladies inflammatoires ou rares ou infection VIH |
-| 6   | Hospitalisation pour Covid-19 |
-| 7   | Insuffisance rénale chronique terminale |
-| 8   | Maternité (avec ou sans pathologies) |
-| 9   | Maladies cardioneurovasculaires |
-| 10  | Maladies du foie ou du pancréas (hors mucoviscidose) |
-| 11  | Maladies neurologiques |
-| 12  | Pas de pathologie repérée, traitement, maternité, hospitalisation ou traitement antalgique ou anti-inflammatoire |
-| 13  | Total consommants tous régimes |
-| 14  | Maladies psychiatriques |
-| 15  | Maladies respiratoires chroniques (hors mucoviscidose) |
-| 16  | Traitement antalgique ou anti-inflammatoire (hors pathologies, traitements, maternité ou hospitalisations) |
-| 17  | Traitements du risque vasculaire (hors pathologies) |
-| 18  | Traitements psychotropes (hors pathologies) |
+Row | patho_niv1 |
+--- | ----- |
+1   | Affections de longue durée (dont 31 et 32\) pour d'autres causes |
+2   | Cancers |
+3   | Diabète |
+4   | Hospitalisations hors pathologies repérées (avec ou sans pathologies, traitements ou maternité) |
+5   | Maladies inflammatoires ou rares ou infection VIH |
+6   | Hospitalisation pour Covid-19 |
+7   | Insuffisance rénale chronique terminale |
+8   | Maternité (avec ou sans pathologies) |
+9   | Maladies cardioneurovasculaires |
+10  | Maladies du foie ou du pancréas (hors mucoviscidose) |
+11  | Maladies neurologiques |
+12  | Pas de pathologie repérée, traitement, maternité, hospitalisation ou traitement antalgique ou anti-inflammatoire |
+13  | Total consommants tous régimes |
+14  | Maladies psychiatriques |
+15  | Maladies respiratoires chroniques (hors mucoviscidose) |
+16  | Traitement antalgique ou anti-inflammatoire (hors pathologies, traitements, maternité ou hospitalisations) |
+17  | Traitements du risque vasculaire (hors pathologies) |
+18  | Traitements psychotropes (hors pathologies) |
 
 Il y a ainsi 18 entrées distinctes pour **patho_niv1**, ce qui correspond à la liste des pathologies affichées pour le niveau 1 sur le site de la CPAM.
 
 Tout semble correct, sauf deux entrées qui attirent mon attention :
 
-\*\* "Pas de pathologie repérée, traitement, maternité, hospitalisation ou traitement antalgique ou anti-inflammatoire" : ça semble indiquer des enregistrements où aucune pathologie ni aucun type de traitement n'a été nécessaire.
-
-\*\* "Total consommants tous régimes" : j'ai déjà parlé de cette entrée en examinant les premières lignes. Elle semble représenter le total de tous les bénéficiaires du système de santé en France, tous régimes confondus.
+* "Pas de pathologie repérée, traitement, maternité, hospitalisation ou traitement antalgique ou anti-inflammatoire" : ça semble indiquer des enregistrements où aucune pathologie ni aucun type de traitement n'a été nécessaire.
+* "Total consommants tous régimes" : j'ai déjà parlé de cette entrée en examinant les premières lignes. Elle semble représenter le total de tous les bénéficiaires du système de santé en France, tous régimes confondus.
 
 Pour m'assurer que je comprends bien ces entrées et leur impact sur le jeu de données, je lance les requêtes SQL suivantes, en mentionnant spécifiquement les valeurs agrégées du sexe (9), des départements (999), des régions (9), des groupes d'âge (“tsage”), ainsi qu'une année donnée (2022), afin d'éviter toute duplication de données :
 
@@ -362,10 +369,10 @@ WHERE
 
 **Résultats:**
 
-Results | Valeurs
----|----
-37 919 240 | `sum_no_pathology`
-68 729 230 | `sum_total_consumers`
+Results    | Valeurs |
+-----------|----|
+37 919 240 | `sum_no_pathology` |
+68 729 230 | `sum_total_consumers` |
 
 La valeur des “total consommants tous régimes” semble exacte, car le site de la CPAM rapporte « 68,7 millions de bénéficiaires de soins de santé en France pour 2022 ».
 
@@ -373,7 +380,7 @@ La valeur de quasi 38 millions de personnes sans pathologie en 2022 (c'est-à-di
 
 Globalement, les résultats des données semblent cohérents.
 
-**Les requêtes sur le reste de mes colonnes clés sont les suivantes** :
+Les requêtes sur le reste de mes colonnes clés sont les suivantes :
 
 ```sql
 SELECT
@@ -412,16 +419,16 @@ Remarque : les valeurs Null pour les niveaux de pathologie 2 et 3 signifient pro
 
 Pour récapituler, il y a :
 
-* 18 lignes valides pour le niveau de pathologie 1\.
-* 48 lignes valides pour le niveau de pathologie 2\.
-* 61 lignes valides pour le niveau de pathologie 3\.
+* 18 lignes valides pour le niveau de pathologie 1.
+* 48 lignes valides pour le niveau de pathologie 2.
+* 61 lignes valides pour le niveau de pathologie 3.
 * 102 lignes pour les départements français, ce qui inclut la valeur agrégée “999” (pour tous les départements). À ma connaissance, il y a 101 départements en France, donc cela semble exact.
 * 19 lignes pour les régions françaises, incluant la valeur agrégée "99" (pour toutes les régions). La France compte 18 régions administratives, donc ce résultat est cohérent.
 * 21 lignes pour les groupes d'âge, allant de "00-04" à "95 et+" (c'est-à-dire de 0-4 ans à 95 ans et plus), avec la valeur agrégée "tsage" (pour tous les âges), donc là aussi cela semble exact.
 
 En bref, tous ces résultats semblent logiques et cohérents.
 
-### 5\. Infos chiffrées de base
+### 5. Infos chiffrées de base
 
 Essayons de connaître des infos numériques de base (minimum, maximum, moyenne) sur deux indicateurs clés : le nombre de patients traités pour une certaine pathologie au cours d'une période (Ntop) et la prévalence de cette pathologie (prev) :
 
@@ -439,29 +446,28 @@ FROM
 
 Résultats:
 
-| Row | Average_Patients | Max_Patients | Min_Patients | Average_Prev | Max_Prev | Min_Prev |
-| :---- | ----- | ----- | ----- | ----- | ----- | ----- |
-| 1 | 5,527 | 68,729,230 | 10 | 6.21 | 100.0 | 0.0 |
+Row | Average_Patients | Max_Patients | Min_Patients | Average_Prev | Max_Prev | Min_Prev |
+:---- | ----- | ----- | ----- | ----- | ----- | ----- |
+1 | 5,527 | 68,729,230 | 10 | 6.21 | 100.0 | 0.0 |
 
-\* À propos du nombre de patients (Ntop)
+#### À propos du nombre de patients (`Ntop`)
 
 Les résultats montrent une moyenne Ntop de 5 527 bénéficiaires de soins de santé par combinaison unique de pathologie, groupe d'âge, sexe, région et année. Cela signifie que, pour toutes les combinaisons de ces facteurs, il y a en moyenne 5 527 personnes recevant des soins pour une condition spécifique dans une population et un lieu donnés.
 
-La valeur maximale de Ntop est de 68 729 230, ce qui représente le nombre total de bénéficiaires de soins de santé en France pour l'année 2022\. Cela correspond parfaitement au site de la CPAM, où il est indiqué « 68,7 millions de bénéficiaires ont reçu au moins un service de santé pris en charge par l'assurance maladie ».
+La valeur maximale de Ntop est de 68 729 230, ce qui représente le nombre total de bénéficiaires de soins de santé en France pour l'année 2022. Cela correspond parfaitement au site de la CPAM, où il est indiqué « 68,7 millions de bénéficiaires ont reçu au moins un service de santé pris en charge par l'assurance maladie ».
 
 Le nombre minimum de Ntop (10 patients) reflète des cas où seulement un petit nombre d'individus, au sein d'une combinaison spécifique de facteurs (comme une pathologie rare dans un certain groupe d'âge et une région donnée), ont reçu un traitement.
 
-\* À propos de la prévalence (prev)
+#### À propos de la prévalence (`prev`)
 
 La prévalence moyenne est de 6,21, avec des extrêmes allant de 0 à 100, qu'on avait déjà aperçu dans le premier extrait de données. Ces résultats extrêmes sont à creuser pour bien les comprendre. Aussi, je voudrais m'assurer que la prévalence (prev) indiquée dans ce jeu de données est bien le rapport entre Ntop par Npop. Je ferai cette vérification très prochainement. ISA work needed.
 
 **Notons deux choses importantes** :
 
-\-  On réalise ici que la **prévalence est affichée en pourcentage par la CPAM**, étant donné que la valeur maximale de `prev` est de 100\. Donc la prévalence maximale est de 100 %.
+* On réalise ici que la **prévalence est affichée en pourcentage par la CPAM**, étant donné que la valeur maximale de `prev` est de 100. Donc la prévalence maximale est de 100 %.
+* Si le minimum de `Ntop` n'est pas zéro mais bien 10, le minimum de la prévalence ne devrait pas être zéro (car Prévalence \= Ntop / Npop). Cependant, j'ai remarqué que de nombreuses entrées de `Ntop` étaient nulles, ce qui peut expliquer le résultat de zéro pour la prévalence (puisque `Ntop` est absent), même si `Ntop` ne contient pas de zéro explicite. La fonction `MIN()` ignore souvent les valeurs nulles, donc si `Ntop` contient des valeurs nulles ou non renseignées, la fonction peut afficher un minimum de 10 (la première valeur numérique non nulle). Il faudra donc vérifier si `Ntop` contient des valeurs nulles pour confirmer cette hypothèse.
 
-– Si le minimum de `Ntop` n'est pas zéro mais bien 10, le minimum de la prévalence ne devrait pas être zéro (car Prévalence \= Ntop / Npop). Cependant, j'ai remarqué que de nombreuses entrées de `Ntop` étaient nulles, ce qui peut expliquer le résultat de zéro pour la prévalence (puisque `Ntop` est absent), même si `Ntop` ne contient pas de zéro explicite. La fonction `MIN()` ignore souvent les valeurs nulles, donc si `Ntop` contient des valeurs nulles ou non renseignées, la fonction peut afficher un minimum de 10 (la première valeur numérique non nulle). Il faudra donc vérifier si `Ntop` contient des valeurs nulles pour confirmer cette hypothèse.
-
-### 6\. Recherche des valeurs nulles
+### 6. Recherche des valeurs nulles
 
 Ça tombe bien, la dernière requête exploratoire consiste à rechercher les valeurs vides/nulles dans la table :
 
@@ -529,7 +535,7 @@ ORDER BY
 
 **Résultats:**
 
-![][image15]
+![image15]
 
 Les résultats montrent des tendances pour lesquelles certains groupes d'âge, comme les très jeunes ou les très âgés, n'ont aucun cas enregistré pour certaines pathologies, telles que des maladies inflammatoires ou des cancers. De plus, certains sexes n'ont pas de cas enregistrés pour des conditions spécifiques, comme les patients masculins pour le cancer du sein féminin. Ces résultats renforcent mon idée que les valeurs nulles dans `Ntop` (nombre de patients) sont cohérentes avec les tendances démographiques attendues de la prévalence des maladies.
 
@@ -559,15 +565,16 @@ FROM
 ```
 
 Bingo !
+
 Le résultat est conforme aux attentes :
 
-Row	| Total_Null_Ntop
-----|--------
-1   | 1238024
+Row | Total_Null_Ntop |
+----|---------|
+1   | 1238024 |
 
 Comme prévu, nous obtenons 1 238 024 valeurs nulles pour `Ntop`.
 
-### 7\. Prévalence, sa signification précise dans ce jeu de données
+### 7. Prévalence, sa signification précise dans ce jeu de données
 
 Afin de m'assurer de bien comprendre ce que signifie exactement la prévalence (prev) dans ce jeu de données, car il s'agit de la variable principale de mon analyse, je lance la requête SQL suivante dans BigQuery.
 
@@ -602,19 +609,19 @@ ORDER BY
 LIMIT 30
 ```
 
-#### Résultats:
+#### Résultats
 
 Les plus grandes différences entre `prev` et `calculated_prev` concernent principalement les personnes âgées, en particulier celles de 95 ans et plus, ainsi que les 85-89 ans. Ces écarts apparaissent lorsque les valeurs de `Ntop` et `Npop` sont petites et semblent arrondies de manière inhabituelle (120, 190, 110, 200, etc.). Cela pourrait indiquer des ajustements ou un lissage dans le processus de calcul des prévalences pour ces tranches d'âge, où les effectifs sont plus faibles et plus susceptibles de variations.
 
-![][image16]
+![image16]
 
-![][image17]
+![image17]
 
 Ces résultats ne m'inquiètent pas vraiment pour mon projet d'analyse. Cependant, dans un contexte professionnel, si je travaillais pour une entreprise propriétaire de ce jeu de données, j'aurais clarifié ce mystère en prenant contact avec la partie prenante responsable de la collecte et de la création des données. J'aurais posé de nombreuses questions jusqu'à m'assurer d'avoir parfaitement compris ce que représentent précisément les colonnes `prev`, `Ntop`, `Npop`, ainsi que les autres champs.
 
 Dans le cadre de ce projet personnel, où j'ai téléchargé les données en open data sur le site de la CPAM, je vais simplement poursuivre mon analyse en utilisant la variable `prev` telle qu'elle est fournie dans le jeu de données.
 
-# Création d'une table plus pertinente
+## Création d'une table plus pertinente
 
 D'après mes premières explorations et ce que je souhaite analyser, je réalise qu'il y a des colonnes et rangées dans le jeu de données qui ne sont pas pertinentes pour mon projet. Je vais donc dupliquer la table initiale dans BigQuery en ne gardant que les colonnes nécessaires. Je vais aussi filtrer certaines données pour ne conserver que les lignes pertinentes pour cette analyse.
 
@@ -651,23 +658,23 @@ WHERE
 
 La table *cleaned_cpam* est bien créée :
 
-![][image18]
+![image18]
 
 Ça a l'air de marcher ! Je n'ai effectivement que les colonnes qui m'intéressent.
 
 Quand je clique sur Preview, je vois que le nombre de mes rangées est désormais de 4.515.840, inférieur au nombre initial de 4.636.840 (soit environ cent mille rangées en moins).
 
-![][image19]
+![image19]
 
 Je vérifie quand même que les lignes contenant "Total consommants" ou "Pas de pathologies" dans la colonne `patho_niv1` ont bien été exclues :
 
-![][image20]
+![image20]
 
 J'obtiens désormais la table *cleaned\_cpam*, plus petite et “nettoyée”, qui ne contient que les informations pertinentes pour mon analyse.
 
-# Scission en plusieurs tables
+## Scission en plusieurs tables
 
-Bien que ma nouvelle table *"cleaned\_cpam"* soit plus petite, avec environ 4,6 millions de lignes et seulement 10 colonnes (comparée aux 16 colonnes initiales), elle reste monolithique et difficile à manipuler directement. Pour optimiser l'organisation des données et tendre vers une meilleure normalisation, je vais scinder la table "*cleaned\_cpam*" en plusieurs tables. Cette approche rendra mes requêtes SQL un tout petit peu plus longues à cause des jointures, mais cela va éviter les redondances et rendre mes analyses plus claires.
+Bien que ma nouvelle table `cleaned_cpam` soit plus petite, avec environ 4,6 millions de lignes et seulement 10 colonnes (comparée aux 16 colonnes initiales), elle reste monolithique et difficile à manipuler directement. Pour optimiser l'organisation des données et tendre vers une meilleure normalisation, je vais scinder la table "*cleaned\_cpam*" en plusieurs tables. Cette approche rendra mes requêtes SQL un tout petit peu plus longues à cause des jointures, mais cela va éviter les redondances et rendre mes analyses plus claires.
 
 Au départ, j'avais prévu les tables suivantes : table *patient* (patient\_id, sexe, classe\_age…), table *pathologie* (patho\_1, patho\_2…), table *localisation* (dept\_id, dept\_name), etc..
 
@@ -681,29 +688,28 @@ Notez que j'aurais aussi pu créer des tables séparées pour l'âge et le sexe 
 
 Voici ma structure de base de données :
 
-### 1\. Table patho
+### 1. Table patho
 
 * **id** **(Primary Key)** : Équivalent à 'top' du jeu de données initial. Type : string
 * **patho\_niv1** : Équivalent à 'patho\_niv1' du jeu de données initial. Type : string
 * **patho\_niv2** : Équivalent à 'patho\_niv2' du jeu de données initial. Type : string
 * **patho\_niv3** : Équivalent à 'patho\_niv3' du jeu de données initial. Type : string
 
-### 2\. Table dept
+### 2. Table dept
 
 * **id (Primary Key)** : Équivalent à 'dept' du jeu de données initial. Code à 2 ou 3 chiffres. Ex. “40” pour les Landes, “2A” pour la Corse-du-Sud, “974” pour l'île de la Réunion, “99” pour tous départements confondus. Type : string
 * **dept\_name** : Nom en toutes lettres du département. Ex. “Landes”. Les valeurs sont à créer car elles n'existent pas dans le jeu initial. Type : string
 
-### 3\. Table patient\_stat
+### 3. Table patient\_stat
 
 * **annee** : Équivalent à 'annee' du jeu de données initial. Type : int
-* **dept\_id (FK)** : Foreign Key vers 'id' dans la table *dept*. Type : string
-* **patho\_id (FK)** : Foreign Key vers 'id' de la table *patho*. Type : string
+* **dept_id (FK)** : Foreign Key vers 'id' dans la table *dept*. Type : string
+* **patho\id (FK)** : Foreign Key vers 'id' de la table *patho*. Type : string
 * **age** : Équivalent à 'cla\_age\_5' du jeu de données initial. Ex. "30-34". Type : string
 * **sex** : Équivalent à 'sexe' du jeu de données initial. Ex. 1 pour homme, 2 pour femme, 9 pour tous sexes. Type : int
 * **Ntop** : Équivalent à 'Ntop' du jeu de données initial. Nombre de patients traités pour une pathologie spécifique. Type : int
 * **Npop** : Équivalent à 'Npop' du jeu de données initial. Base de population utilisée pour les calculs de prévalence. Type : int
 * **prev** : Équivalent à 'prev' du jeu de données initial. Prévalence indiquée en pourcentage pour une pathologie donnée. Type : float
-
 
 ---
 
@@ -711,7 +717,7 @@ Voici le point de départ pour structurer ma base de données en plusieurs table
 
 # Création et remplissage des trois tables
 
-### 1\. Création et remplissage de la table *patho* :
+### 1. Création et remplissage de la table *patho* :
 
 ```sql
 -- Création de la table patho, sans déclarer explicitement que la première colonne est la clé primaire (apparemment impossible de déclarer des PRIMARY KEYS dans BigQuery)
@@ -751,11 +757,11 @@ GROUP BY -- pour éviter les doublons
 
 Parfait, ça marche, avec une table à 77 lignes :
 
-![][image21]
+![image21]
 
-**![][image22]**
+![image22]
 
-### 2\. Création et remplissage de la table *dpt*
+### 2. Création et remplissage de la table *dpt*
 
 Je lance les deux requêtes SQL suivantes :
 
@@ -885,13 +891,13 @@ VALUES
 
 Résultats:
 
-![][image23]`
+![image23]
 
-![][image24]
+![image24]
 
 Ça marche, j'ai bien 102 entrées (les 101 départements français et l'entrée '`999`' pour 'tous départements').
 
-### 3\. Création et remplissage de la table *patient\_stat*
+### 3. Création et remplissage de la table *patient\_stat*
 
 Je crée désormais la table *patient\_stat* pour pouvoir joindre les deux autres tables :
 
@@ -952,9 +958,9 @@ Big Query affiche “This statement added 4,515,840 rows to patient_stat. “, c
 
 **Voici la table** :
 
-![][image25]
+![image25]
 
-![][image26]
+![image26]
 
 **\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\***
 
@@ -964,7 +970,7 @@ Maintenant que j'ai créé et peuplé mes trois nouvelles tables, procédons à 
 
 L'avantage d'avoir plusieurs petites tables est qu'elles sont plus faciles à gérer et à examiner. Voyons-les une à une :
 
-### 1\. Examen de la table *patho*
+### 1. Examen de la table *patho*
 
 Cette table contient 77 lignes et 4 colonnes (`id`, `patho_niv1`, `patho_niv2`, `patho_niv3`). Maintenant que la table est plus petite, elle est plus facile à lire et à examiner. Je remarque que les colonnes '`id`' et '`patho_niv1`' sont entièrement remplies. En revanche, les colonnes '`patho_niv2`' et '`patho_niv3`' contiennent des valeurs nulles, comme observé précédemment.
 
@@ -972,13 +978,14 @@ Ces valeurs nulles correspondent à des pathologies sans sous-catégories (ce qu
 
 Exemples :
 
-`id = 'CAT_CRE_ACT'` pour `Cancers (niv1) / Cancer colorectal (niv2) / Cancer colorectal actif (niv3)`
+Id            |  Libellés |
+--------------|-----------|
+`CAT_CRE_ACT` | Cancers (niv1) / Cancer colorectal (niv2) / Cancer colorectal actif (niv3) |
+`CAN_CAT_CAT` | Cancers (niv1) / Null (niv2) / Null (niv3) |
 
-`id = 'CAN_CAT_CAT'` pour `Cancers (niv1) / Null (niv2) / Null (niv3)`
+![image27]
 
-![][image27]
-
-### 2\. Examen de la table *dpt*
+### 2. Examen de la table *dpt*
 
 Cette table possède 2 colonnes ('id' qui est le code du département, et 'dept\_name' qui est le nom en toutes lettres du département). La table contient 102 rangées (96 départements de la France métropolitaine, plus 5 départements d'Outre-mer, et 1 département fictif '99' agrégeant tous les départements).
 
@@ -991,27 +998,27 @@ FROM
     alien-oarlock-428016-f3.french_cpam.dept
 ORDER BY
     id;
-```sql
+```
 
-![][image28]
+![image28]
 
 Petite vérification pour s'assurer que les deux départements de Corse sont bien inclus:
 
-![][image29]
+![image29]
 
 Ainsi que les cinq départements d'Outre-mer:
 
-![][image30]
+![image30]
 
-### 3\. Examen de la table *patient\_stat*
+### 3. Examen de la table *patient\_stat*
 
 Il s'agit de la table la plus large, avec 8 colonnes et plus de 4,5 millions de rangées (4 515 840).
 
-Elle contient des valeurs Null dans les colonnes Ntop et prev, comme attendu.
+Elle contient des valeurs Null dans les colonnes `Ntop` et `prev`, comme attendu.
 
-**![][image26]**
+![image26]
 
-Comme on l'a déjà évoqué, les valeurs Null dans les colonnes **Ntop** et **prev** semblent indiquer des situations où il n'y a pas de patients traités pour une pathologie donnée dans une tranche d'âge ou un sexe spécifique. Par exemple, un groupe démographique peut ne pas être affecté par une pathologie particulière, d'où les valeurs Null dans **Ntop** (nombre de patients) et **prev** (prévalence).
+Comme on l'a déjà évoqué, les valeurs Null dans les colonnes `Ntop` et `prev` semblent indiquer des situations où il n'y a pas de patients traités pour une pathologie donnée dans une tranche d'âge ou un sexe spécifique. Par exemple, un groupe démographique peut ne pas être affecté par une pathologie particulière, d'où les valeurs Null dans `Ntop` (nombre de patients) et `prev` (prévalence).
 
 Je décide de garder ces valeurs, mais je pourrai les filtrer ultérieurement dans mes analyses où leur présence pourrait fausser les résultats ou les visualisations.
 
@@ -1030,3 +1037,34 @@ Comme mes données sont dans BigQuery, je vais continuer à utiliser des requêt
 Je vais commencer par analyser les données les plus récentes (2022) pour répondre à ma première question. Ensuite, je me pencherai sur les années précédentes pour voir comment ces pathologies ont évolué entre 2015 et 2022, répondant ainsi à ma deuxième question. Enfin, je tenterai de déceler des tendances post-COVID (2020-2022) pour répondre à ma troisième question.
 
 Tout ceci sera documenté dans la **Partie 2 de mon article** (lien).
+
+[image1]: images/image01.png
+[image2]: images/image2.png
+[image3]: images/image3.png
+[image4]: images/image4.png
+[image5]: images/image5.png
+[image6]: images/image6.png
+[image7]: images/image7.png
+[image8]: images/image8.png
+[image9]: images/image9.png
+[image10]: images/image10.png
+[image11]: images/image11.png
+[image12]: images/image12.png
+[image13]: images/image13.png
+[image14]: images/image14.png
+[image15]: images/image15.png
+[image16]: images/image16.png
+[image17]: images/image17.png
+[image18]: images/image18.png
+[image19]: images/image19.png
+[image20]: images/image20.png
+[image21]: images/image21.png
+[image22]: images/image22.png
+[image23]: images/image23.png
+[image24]: images/image24.png
+[image25]: images/image25.png
+[image26]: images/image26.png
+[image27]: images/image27.png
+[image28]: images/image28.png
+[image29]: images/image29.png
+[image30]: images/image30.png
