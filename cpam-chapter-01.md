@@ -117,11 +117,11 @@ Colonne | Description | Type   |
 --------|-------------|--------|
 `annee` | les années que couvre cette période d'analyse, qui s'étendent actuellement de 2015 à 2022. | date |
 `patho_niv1`, `patho_niv2`, `patho_niv3` | groupe ou sous-groupe de pathologies (ou traitements chroniques ou épisodes de soins). | texte |
-`top` | libellé technique de la pathologie. Ex. “CAN\_CAT\_CAT”. | texte |
+`top` | libellé technique de la pathologie. Ex. `CAN_CAT_CAT`. | texte |
 `cla_age_5` | Classe d'âge (5 ans). Ex : 30-34. | texte |
 `libelle_classe_age` | le libellé de la classe d'âge, par ex. “de 30 à 34 ans”. | texte |
 `sexe` | 1 pour homme, 2 pour femme, et 9 pour 'tous sexes'. | texte |
-`libelle_sexe` | le libellé pour le sexe, ex. "homme", "femme", "tous sexes". *Type| texte*
+`libelle_sexe` | le libellé pour le sexe, ex. "homme", "femme", "tous sexes". | texte |
 `region` | code INSEE de chaque région française. D'après ce que je vois sur le site de la CPAM, le code '99' signifie “toutes régions”. | texte |
 `dept` | code INSEE de chaque département français. D'après ce que je vois sur le site de la CPAM, le code '999' signifie 'tous départements'. | texte |
 `Ntop` | effectif de patients pris en charge pour la pathologie (ou traitement chronique ou épisode de soins) dont il est question. | int |
@@ -223,7 +223,7 @@ Toutefois, comme on l'a vu dans BigQuery, je dois inclure l'ID du projet et l'ID
 SELECT
     COUNT(*) AS 'number_of_columns'
 FROM
-    `alien-oarlock-428016-f3.french_cpam.INFORMATION_SCHEMA.COLUMNS`
+    alien-oarlock-428016-f3.french_cpam.INFORMATION_SCHEMA.COLUMNS
 WHERE
     table_name = 'cpam_effectifs_july_2024';
 ```
@@ -240,7 +240,7 @@ La table contient 16 colonnes, ce qui me paraît beaucoup. Pour vérifier ce ré
 SELECT
     column_name
 FROM
-    `alien-oarlock-428016-f3.french_cpam.INFORMATION_SCHEMA.COLUMNS`
+    alien-oarlock-428016-f3.french_cpam.INFORMATION_SCHEMA.COLUMNS
 WHERE
     table_name = 'cpam_effectifs_july_2024'
 ```
@@ -297,8 +297,7 @@ Ainsi donc, **certaines lignes agrègent les données** plutôt que d'afficher d
 
 Je souhaite afficher toutes les valeurs distinctes présentes dans chaque colonne clé, comme les colonnes de pathologies, régions, départements et groupes d'âge.
 
-Commençons par patho\_niv1 pour lister toutes les pathologies distinctes de
-niveau 1:
+Commençons par `patho_niv1` pour lister toutes les pathologies distinctes de niveau 1:
 
 ```sql
 SELECT
@@ -488,8 +487,6 @@ SELECT
 FROM
     alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
 ```
-
-**Here's a snippet:**
 
 **Résultats** :
 
