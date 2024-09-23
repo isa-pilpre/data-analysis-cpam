@@ -465,36 +465,41 @@ La prévalence moyenne est de 6,21, avec des extrêmes allant de 0 à 100, qu'on
 
 Ça tombe bien, la dernière requête exploratoire consiste à rechercher les valeurs vides/nulles dans la table :
 
-`SELECT`
-
-`COUNTIF(patho_niv1 IS NULL) as Missing_Patho1,`
-`COUNTIF(patho_niv2 IS NULL) as Missing_Patho2,`
-`COUNTIF(patho_niv3 IS NULL) as Missing_Patho3,`
-`COUNTIF(annee IS NULL) as Missing_Year,`
-`COUNTIF(sexe IS NULL) as Missing_Sexe,`
-`COUNTIF(cla_age_5 IS NULL) as Missing_Age_Group,`
-`COUNTIF(Ntop IS NULL) as Missing_Patients,`
-`COUNTIF(Npop IS NULL) as Missing_Population,`
-`COUNTIF(dept IS NULL) as Missing_Department,`
-`COUNTIF(region IS NULL) as Missing_Region`
-
-`FROM alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024;`
+```sql
+SELECT
+    COUNTIF(patho_niv1 IS NULL) AS Missing_Patho1,
+    COUNTIF(patho_niv2 IS NULL) AS Missing_Patho2,
+    COUNTIF(patho_niv3 IS NULL) AS Missing_Patho3,
+    COUNTIF(annee IS NULL) AS Missing_Year,
+    COUNTIF(sexe IS NULL) AS Missing_Sexe,
+    COUNTIF(cla_age_5 IS NULL) AS Missing_Age_Group,
+    COUNTIF(Ntop IS NULL) AS Missing_Patients,
+    COUNTIF(Npop IS NULL) AS Missing_Population,
+    COUNTIF(dept IS NULL) AS Missing_Department,
+    COUNTIF(region IS NULL) AS Missing_Region
+FROM
+    alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
+```
 
 **Here's a snippet:**
 
 **Résultats** :
 
-J'ai trouvé des valeurs nulles principalement dans les colonnes Pathologie de Niveau 2 (483 840 occurrences) et Pathologie de Niveau 3 (1 048 320 occurrences), ce qui suggère que certaines pathologies de Niveau 1 ne se divisent pas en sous-catégories.
+J'ai trouvé des valeurs nulles principalement dans les colonnes Pathologie de Niveau 2 (483 840 occurrences) et Pathologie de Niveau 3 (1 048 320 occurrences), ce qui suggère que certaines pathologies de Niveau 1 ne se divisent pas en sous-catégories.
 
 Et oui, la colonne `Ntop` (nombre de patients) contient également de nombreux nulls : précisément 1 238 024 nulls. Ce grand nombre m'interpelle. Pour en savoir plus, je lance la requête suivante pour examiner les 100 premières lignes où `Ntop` est nul, et je vérifie les valeurs des autres colonnes dans ces lignes :
 
-`SELECT *`
+```sql
+SELECT
+    *
+FROM
+    alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
+WHERE
+    Ntop IS NULL
+LIMIT 100
+```
 
-`FROM alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024`
-`WHERE Ntop IS NULL`
-`LIMIT 100;`
-
-`A snippet of the results:`
+A snippet of the results:
 
 **Ce que j'apprends** :
 
@@ -502,15 +507,25 @@ Les résultats sont révélateurs. Les cent premières lignes avec une valeur nu
 
 Pour confirmer mon hypothèse et obtenir une vue plus large, je lance la requête suivante :
 
-`SELECT cla_age_5, sexe, patho_niv1, patho_niv2, COUNT(*) as Count_of_Null_Ntop`
-
-`FROM alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024`
-
-`WHERE Ntop IS NULL`
-
-`GROUP BY cla_age_5, sexe, patho_niv1, patho_niv2`
-
-`ORDER BY Count_of_Null_Ntop DESC;`
+```sql
+SELECT
+    cla_age_5,
+    sexe,
+    patho_niv1,
+    patho_niv2,
+    COUNT(*) AS Count_of_Null_Ntop
+FROM
+    alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
+WHERE
+    Ntop IS NULL
+GROUP BY
+    cla_age_5,
+    sexe,
+    patho_niv1,
+    patho_niv2
+ORDER BY
+    Count_of_Null_Ntop DESC
+```
 
 **Résultats:**
 
@@ -520,28 +535,37 @@ Les résultats montrent des tendances pour lesquelles certains groupes d'âge, c
 
 Pour garantir l'intégrité des données, je vérifie que le nombre total de valeurs nulles identifiées dans la requête précédente correspond bien aux 1 238 024 valeurs nulles de `Ntop` que nous avons trouvées plus tôt. Au passage, cela me permet d'utiliser une sous-requête imbriquée dans une requête :
 
-`SELECT SUM(Count_of_Null_Ntop) as Total_Null_Ntop`
-
-`FROM (`
-
-   `SELECT cla_age_5, sexe, patho_niv1, patho_niv2, COUNT(*) as Count_of_Null_Ntop`
-
-   `FROM alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024`
-
-   `WHERE Ntop IS NULL`
-
-   `GROUP BY cla_age_5, sexe, patho_niv1, patho_niv2`
-
-`) as my_temp_table;`
+```sql
+SELECT
+    SUM(Count_of_Null_Ntop) AS Total_Null_Ntop
+FROM
+    (
+        SELECT
+            cla_age_5,
+            sexe,
+            patho_niv1,
+            patho_niv2,
+            COUNT(*) AS Count_of_Null_Ntop
+        FROM
+            alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
+        WHERE
+            Ntop IS NULL
+        GROUP BY
+            cla_age_5,
+            sexe,
+            patho_niv1,
+            patho_niv2
+    ) AS my_temp_table;
+```
 
 Bingo !
 Le résultat est conforme aux attentes :
 
-Row	  Total\_Null\_Ntop
+Row	| Total_Null_Ntop
+----|--------
+1   | 1238024
 
-1	 1238024
-
-Comme prévu, nous obtenons 1 238 024 valeurs nulles pour `Ntop.`
+Comme prévu, nous obtenons 1 238 024 valeurs nulles pour `Ntop`.
 
 ### 7\. Prévalence, sa signification précise dans ce jeu de données
 
@@ -551,38 +575,40 @@ J'exclus toutes les valeurs agrégées, à savoir "tous sexes" (`sexe != 9`), "t
 Je calcule la prévalence à partir des colonnes `Ntop` et `Npop` (Ntop/Npop), en l'arrondissant à trois décimales, comme la variable prev fournie dans le jeu de données.
 Puis je cherche les entrées où la différence entre la prévalence fournie et celle calculée dépasse 0,001 :
 
-`SELECT`
- `patho_niv1,`
- `sexe,`
- `cla_age_5,`
- `Ntop,`
- `Npop,`
- `prev,`
- `ROUND((Ntop / Npop * 100), 3) AS calculated_prev,`
- `prev - ROUND((Ntop / Npop * 100), 3) AS difference`
-`FROM`
- `alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024`
-`WHERE`
- `Npop IS NOT NULL`
- `AND Ntop IS NOT NULL`
- `AND Ntop >= 100`
- `AND Npop > 0`
- `AND ABS(prev - ROUND((Ntop / Npop * 100), 3)) > 0.001`
- `AND sexe != 9`
- `AND dept != '999'`
- `AND region != 99`
- `AND cla_age_5 != 'tsage'`
-`ORDER BY`
- `difference DESC`
-`LIMIT 30 ;`
+```sql
+SELECT
+    patho_niv1,
+    sexe,
+    cla_age_5,
+    Ntop,
+    Npop,
+    prev,
+    ROUND((Ntop / Npop * 100), 3) AS calculated_prev,
+    prev - ROUND((Ntop / Npop * 100), 3) AS difference
+FROM
+    alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
+WHERE
+    Npop IS NOT NULL
+    AND Ntop IS NOT NULL
+    AND Ntop >= 100
+    AND Npop > 0
+    AND ABS(prev - ROUND((Ntop / Npop * 100), 3)) > 0.001
+    AND sexe != 9
+    AND dept != '999'
+    AND region != 99
+    AND cla_age_5 != 'tsage'
+ORDER BY
+    difference DESC
+LIMIT 30
+```
 
 #### Résultats:
 
 Les plus grandes différences entre `prev` et `calculated_prev` concernent principalement les personnes âgées, en particulier celles de 95 ans et plus, ainsi que les 85-89 ans. Ces écarts apparaissent lorsque les valeurs de `Ntop` et `Npop` sont petites et semblent arrondies de manière inhabituelle (120, 190, 110, 200, etc.). Cela pourrait indiquer des ajustements ou un lissage dans le processus de calcul des prévalences pour ces tranches d'âge, où les effectifs sont plus faibles et plus susceptibles de variations.
 
-`![][image16]`
+![][image16]
 
-`![][image17]`
+![][image17]
 
 Ces résultats ne m'inquiètent pas vraiment pour mon projet d'analyse. Cependant, dans un contexte professionnel, si je travaillais pour une entreprise propriétaire de ce jeu de données, j'aurais clarifié ce mystère en prenant contact avec la partie prenante responsable de la collecte et de la création des données. J'aurais posé de nombreuses questions jusqu'à m'assurer d'avoir parfaitement compris ce que représentent précisément les colonnes `prev`, `Ntop`, `Npop`, ainsi que les autres champs.
 
@@ -598,43 +624,32 @@ Ensuite, comme on l'a vu, certaines lignes de la colonne **Patho Niv 1** contien
 
 Voici ma requête SQL sur BiqQuery pour créer la table *cleaned\_cpam* :
 
-`-- Création de la table 'cleaned_cpam'`
+```sql
+-- Création de la table 'cleaned_cpam'
 
-``CREATE OR REPLACE TABLE `alien-oarlock-428016-f3.french_cpam.cleaned_cpam` AS``
+CREATE OR REPLACE
+TABLE alien-oarlock-428016-f3.french_cpam.cleaned_cpam AS
 
-`SELECT`
+SELECT
+    annee,
+    top,
+    patho_niv1,
+    patho_niv2,
+    patho_niv3,
+    dept,
+    cla_age_5,
+    sexe,
+    Ntop,
+    Npop,
+    prev
+FROM
+    alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
+WHERE
+    patho_niv1 NOT LIKE "%Pas de patho%"
+    AND patho_niv1 NOT LIKE "%Total conso%"
+```
 
- `annee,`
-
- `top,`
-
- `patho_niv1,`
-
- `patho_niv2,`
-
- `patho_niv3,`
-
- `dept,`
-
- `cla_age_5,`
-
- `sexe,`
-
- `Ntop,`
-
- `Npop,`
-
- `prev`
-
-`` FROM `alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024` ``
-
-`WHERE`
-
- `patho_niv1 NOT LIKE "%Pas de patho%"`
-
- `AND patho_niv1 NOT LIKE "%Total conso%";`
-
-La table *cleaned\_cpam* est bien créée :
+La table *cleaned_cpam* est bien créée :
 
 ![][image18]
 
@@ -669,7 +684,6 @@ Voici ma structure de base de données :
 ### 1\. Table patho
 
 * **id** **(Primary Key)** : Équivalent à 'top' du jeu de données initial. Type : string
-*
 * **patho\_niv1** : Équivalent à 'patho\_niv1' du jeu de données initial. Type : string
 * **patho\_niv2** : Équivalent à 'patho\_niv2' du jeu de données initial. Type : string
 * **patho\_niv3** : Équivalent à 'patho\_niv3' du jeu de données initial. Type : string
@@ -699,37 +713,41 @@ Voici le point de départ pour structurer ma base de données en plusieurs table
 
 ### 1\. Création et remplissage de la table *patho* :
 
-`-- Création de la table patho, sans déclarer explicitement que la première colonne est la clé primaire (apparemment impossible de déclarer des PRIMARY KEYS dans BigQuery)`
+```sql
+-- Création de la table patho, sans déclarer explicitement que la première colonne est la clé primaire (apparemment impossible de déclarer des PRIMARY KEYS dans BigQuery)
 
-``CREATE TABLE `alien-oarlock-428016-f3.french_cpam.patho` (``
+CREATE TABLE alien-oarlock-428016-f3.french_cpam.patho (
+    id STRING NOT NULL, -- Clé qui servira de Primary Key ('top' de la table initiale)
+    patho_niv1 STRING,
+    patho_niv2 STRING,
+    patho_niv3 STRING
+);
+```
 
-   `id STRING NOT NULL,  -- Clé qui servira de Primary Key ('top' de la table initiale)`
+```sql
+-- Insertion des valeurs dans la table patho depuis la table cleaned_cpam
 
-   `patho_niv1 STRING,`
-
-   `patho_niv2 STRING,`
-
-   `patho_niv3 STRING`
-
-`);`
-
-`-- Insertion des valeurs dans la table patho depuis la table cleaned_cpam`
-
-``INSERT INTO `alien-oarlock-428016-f3.french_cpam.patho` (id, patho_niv1, patho_niv2, patho_niv3)``
-
-`SELECT`
-
-   `top,  -- Utilisation du code technique 'top' comme identifiant`
-
-   `patho_niv1,`
-
-   `patho_niv2,`
-
-   `patho_niv3`
-
-`` FROM `alien-oarlock-428016-f3.french_cpam.cleaned_cpam` ``
-
-`GROUP BY top, patho_niv1, patho_niv2, patho_niv3;  -- GROUP BY pour éviter les doublons`
+INSERT
+    INTO
+    alien-oarlock-428016-f3.french_cpam.patho (
+        id,
+        patho_niv1,
+        patho_niv2,
+        patho_niv3
+    )
+SELECT
+    top, -- Utilisation du code technique 'top' comme identifiant
+    patho_niv1,
+    patho_niv2,
+    patho_niv3
+FROM
+    alien-oarlock-428016-f3.french_cpam.cleaned_cpam
+GROUP BY -- pour éviter les doublons
+    top,
+    patho_niv1,
+    patho_niv2,
+    patho_niv3;
+```
 
 Parfait, ça marche, avec une table à 77 lignes :
 
@@ -743,16 +761,16 @@ Je lance les deux requêtes SQL suivantes :
 
 ```sql
 -- Création de la table dept
-
 CREATE OR REPLACE
 TABLE alien-oarlock-428016-f3.french_cpam.dept (
     id STRING,
     -- code du département (string à cause de '2A' et '2B' en Corse)
-
     dept_name STRING
     -- nom du département en toutes lettres
 );
+```
 
+```sql
 -- Insertion des noms des départements
 INSERT
     INTO
@@ -761,586 +779,182 @@ INSERT
         dept_name
     )
 VALUES
-
- (
-    "01",
-    "Ain"
-),
-
- (
-    "02",
-    "Aisne"
-),
-
- (
-    "03",
-    "Allier"
-),
-
- (
-    "04",
-    "Alpes-de-Haute-Provence"
-),
-
- (
-    "05",
-    "Hautes-Alpes"
-),
-
- (
-    "06",
-    "Alpes-Maritimes"
-),
-
- (
-    "07",
-    "Ardèche"
-),
-
- (
-    "08",
-    "Ardennes"
-),
-
- (
-    "09",
-    "Ariège"
-),
-
- (
-    "10",
-    "Aube"
-),
-
- (
-    "11",
-    "Aude"
-),
-
- (
-    "12",
-    "Aveyron"
-),
-
- (
-    "13",
-    "Bouches-du-Rhône"
-),
-
- (
-    "14",
-    "Calvados"
-),
-
- (
-    "15",
-    "Cantal"
-),
-
- (
-    "16",
-    "Charente"
-),
-
- (
-    "17",
-    "Charente-Maritime"
-),
-
- (
-    "18",
-    "Cher"
-),
-
- (
-    "19",
-    "Corrèze"
-),
-
- (
-    "21",
-    "Côte-d'Or"
-),
-
- (
-    "22",
-    "Côtes-d'Armor"
-),
-
- (
-    "23",
-    "Creuse"
-),
-
- (
-    "24",
-    "Dordogne"
-),
-
- (
-    "25",
-    "Doubs"
-),
-
- (
-    "26",
-    "Drôme"
-),
-
- (
-    "27",
-    "Eure"
-),
-
- (
-    "28",
-    "Eure-et-Loir"
-),
-
- (
-    "29",
-    "Finistère"
-),
-
- (
-    "2A",
-    "Corse-du-Sud"
-),
-
- (
-    "2B",
-    "Haute-Corse"
-),
-
- (
-    "30",
-    "Gard"
-),
-
- (
-    "31",
-    "Haute-Garonne"
-),
-
- (
-    "32",
-    "Gers"
-),
-
- (
-    "33",
-    "Gironde"
-),
-
- (
-    "34",
-    "Hérault"
-),
-
- (
-    "35",
-    "Ille-et-Vilaine"
-),
-
- (
-    "36",
-    "Indre"
-),
-
- (
-    "37",
-    "Indre-et-Loire"
-),
-
- (
-    "38",
-    "Isère"
-),
-
- (
-    "39",
-    "Jura"
-),
-
- (
-    "40",
-    "Landes"
-),
-
- (
-    "41",
-    "Loir-et-Cher"
-),
-
- (
-    "42",
-    "Loire"
-),
-
- (
-    "43",
-    "Haute-Loire"
-),
-
- (
-    "44",
-    "Loire-Atlantique"
-),
-
- (
-    "45",
-    "Loiret"
-),
-
- (
-    "46",
-    "Lot"
-),
-
- (
-    "47",
-    "Lot-et-Garonne"
-),
-
- (
-    "48",
-    "Lozère"
-),
-
- (
-    "49",
-    "Maine-et-Loire"
-),
-
- (
-    "50",
-    "Manche"
-),
-
- (
-    "51",
-    "Marne"
-),
-
- (
-    "52",
-    "Haute-Marne"
-),
-
- (
-    "53",
-    "Mayenne"
-),
-
- (
-    "54",
-    "Meurthe-et-Moselle"
-),
-
- (
-    "55",
-    "Meuse"
-),
-
- (
-    "56",
-    "Morbihan"
-),
-
- (
-    "57",
-    "Moselle"
-),
-
- (
-    "58",
-    "Nièvre"
-),
-
- (
-    "59",
-    "Nord"
-),
-
- (
-    "60",
-    "Oise"
-),
-
- (
-    "61",
-    "Orne"
-),
-
- (
-    "62",
-    "Pas-de-Calais"
-),
-
- (
-    "63",
-    "Puy-de-Dôme"
-),
-
- (
-    "64",
-    "Pyrénées-Atlantiques"
-),
-
- (
-    "65",
-    "Hautes-Pyrénées"
-),
-
- (
-    "66",
-    "Pyrénées-Orientales"
-),
-
- (
-    "67",
-    "Bas-Rhin"
-),
-
- (
-    "68",
-    "Haut-Rhin"
-),
-
- (
-    "69",
-    "Rhône"
-),
-
- (
-    "70",
-    "Haute-Saône"
-),
-
- (
-    "71",
-    "Saône-et-Loire"
-),
-
- (
-    "72",
-    "Sarthe"
-),
-
- (
-    "73",
-    "Savoie"
-),
-
- (
-    "74",
-    "Haute-Savoie"
-),
-
- (
-    "75",
-    "Paris"
-),
-
- (
-    "76",
-    "Seine-Maritime"
-),
-
- (
-    "77",
-    "Seine-et-Marne"
-),
-
- (
-    "78",
-    "Yvelines"
-),
-
- (
-    "79",
-    "Deux-Sèvres"
-),
-
- (
-    "80",
-    "Somme"
-),
-
- (
-    "81",
-    "Tarn"
-),
-
- (
-    "82",
-    "Tarn-et-Garonne"
-),
-
- (
-    "83",
-    "Var"
-),
-
- (
-    "84",
-    "Vaucluse"
-),
-
- (
-    "85",
-    "Vendée"
-),
-
- (
-    "86",
-    "Vienne"
-),
-
- (
-    "87",
-    "Haute-Vienne"
-),
-
- (
-    "88",
-    "Vosges"
-),
-
- (
-    "89",
-    "Yonne"
-),
-
- (
-    "90",
-    "Territoire de Belfort"
-),
-
- (
-    "91",
-    "Essonne"
-),
-
- (
-    "92",
-    "Hauts-de-Seine"
-),
-
- (
-    "93",
-    "Seine-Saint-Denis"
-),
- (
-    "94",
-    "Val-de-Marne"
-),
- (
-    "95",
-    "Val-d'Oise"
-),
- (
-    "971",
-    "Guadeloupe"
-),
- (
-    "972",
-    "Martinique"
-),
- (
-    "973",
-    "Guyane"
-),
- (
-    "974",
-    "La Réunion"
-),
- (
-    "976",
-    "Mayotte"
-),
- (
-    "999",
-    "Tous départements"
-);
+ ( "01", "Ain"),
+ ( "02", "Aisne"),
+ ( "03", "Allier"),
+ ( "04", "Alpes-de-Haute-Provence"),
+ ( "05", "Hautes-Alpes"),
+ ( "06", "Alpes-Maritimes"),
+ ( "07", "Ardèche"),
+ ( "08", "Ardennes"),
+ ( "09", "Ariège"),
+ ( "10", "Aube"),
+ ( "11", "Aude"),
+ ( "12", "Aveyron"),
+ ( "13", "Bouches-du-Rhône"),
+ ( "14", "Calvados"),
+ ( "15", "Cantal"),
+ ( "16", "Charente"),
+ ( "17", "Charente-Maritime"),
+ ( "18", "Cher"),
+ ( "19", "Corrèze"),
+ ( "21", "Côte-d'Or"),
+ ( "22", "Côtes-d'Armor"),
+ ( "23", "Creuse"),
+ ( "24", "Dordogne"),
+ ( "25", "Doubs"),
+ ( "26", "Drôme"),
+ ( "27", "Eure"),
+ ( "28", "Eure-et-Loir"),
+ ( "29", "Finistère"),
+ ( "2A", "Corse-du-Sud"),
+ ( "2B", "Haute-Corse"),
+ ( "30", "Gard"),
+ ( "31", "Haute-Garonne"),
+ ( "32", "Gers"),
+ ( "33", "Gironde"),
+ ( "34", "Hérault"),
+ ( "35", "Ille-et-Vilaine"),
+ ( "36", "Indre"),
+ ( "37", "Indre-et-Loire"),
+ ( "38", "Isère"),
+ ( "39", "Jura"),
+ ( "40", "Landes"),
+ ( "41", "Loir-et-Cher"),
+ ( "42", "Loire"),
+ ( "43", "Haute-Loire"),
+ ( "44", "Loire-Atlantique"),
+ ( "45", "Loiret"),
+ ( "46", "Lot"),
+ ( "47", "Lot-et-Garonne"),
+ ( "48", "Lozère"),
+ ( "49", "Maine-et-Loire"),
+ ( "50", "Manche"),
+ ( "51", "Marne"),
+ ( "52", "Haute-Marne"),
+ ( "53", "Mayenne"),
+ ( "54", "Meurthe-et-Moselle"),
+ ( "55", "Meuse"),
+ ( "56", "Morbihan"),
+ ( "57", "Moselle"),
+ ( "58", "Nièvre"),
+ ( "59", "Nord"),
+ ( "60", "Oise"),
+ ( "61", "Orne"),
+ ( "62", "Pas-de-Calais"),
+ ( "63", "Puy-de-Dôme"),
+ ( "64", "Pyrénées-Atlantiques"),
+ ( "65", "Hautes-Pyrénées"),
+ ( "66", "Pyrénées-Orientales"),
+ ( "67", "Bas-Rhin"),
+ ( "68", "Haut-Rhin"),
+ ( "69", "Rhône"),
+ ( "70", "Haute-Saône"),
+ ( "71", "Saône-et-Loire"),
+ ( "72", "Sarthe"),
+ ( "73", "Savoie"),
+ ( "74", "Haute-Savoie"),
+ ( "75", "Paris"),
+ ( "76", "Seine-Maritime"),
+ ( "77", "Seine-et-Marne"),
+ ( "78", "Yvelines"),
+ ( "79", "Deux-Sèvres"),
+ ( "80", "Somme"),
+ ( "81", "Tarn"),
+ ( "82", "Tarn-et-Garonne"),
+ ( "83", "Var"),
+ ( "84", "Vaucluse"),
+ ( "85", "Vendée"),
+ ( "86", "Vienne"),
+ ( "87", "Haute-Vienne"),
+ ( "88", "Vosges"),
+ ( "89", "Yonne"),
+ ( "90", "Territoire de Belfort"),
+ ( "91", "Essonne"),
+ ( "92", "Hauts-de-Seine"),
+ ( "93", "Seine-Saint-Denis"),
+ ( "94", "Val-de-Marne"),
+ ( "95", "Val-d'Oise"),
+ ( "971", "Guadeloupe"),
+ ( "972", "Martinique"),
+ ( "973", "Guyane"),
+ ( "974", "La Réunion"),
+ ( "976", "Mayotte"),
+ ( "999", "Tous départements");
 ```
 
+Résultats:
 
-`Résultats:`
+![][image23]`
 
-`![][image23]`
+![][image24]
 
-`![][image24]`
-
-`Ça marche, j'ai bien 102 entrées (les 101 départements français et l'entrée '999' pour 'tous départements').`
+Ça marche, j'ai bien 102 entrées (les 101 départements français et l'entrée '`999`' pour 'tous départements').
 
 ### 3\. Création et remplissage de la table *patient\_stat*
 
 Je crée désormais la table *patient\_stat* pour pouvoir joindre les deux autres tables :
 
-`-- Création de la table patient_stat`
+```sql
+-- Création de la table patient_stat
+CREATE OR REPLACE
+TABLE alien-oarlock-428016-f3.french_cpam.patient_stat (
+    annee INT64,
+    dept_id STRING,  -- Foreign Key vers la table dept
+    patho_id STRING, -- Foreign Key vers la table patho
+    age STRING,      -- classe d'âge
+    sex INT64,       -- sexe (1 pour homme, 2 pour femme, 9 pour tous)
 
-``CREATE OR REPLACE TABLE `alien-oarlock-428016-f3.french_cpam.patient_stat` (``
+    Ntop INT64,
+    Npop INT64,
+    prev FLOAT64
+);
+```
 
- `annee INT64,`
+```sql
+-- Insertion des données dans la table patient_stat
+INSERT
+    INTO
+    alien-oarlock-428016-f3.french_cpam.patient_stat (
+        annee,
+        dept_id,
+        patho_id,
+        age,
+        sex,
+        Ntop,
+        Npop,
+        prev
+    )
 
- `dept_id STRING,  -- Foreign Key vers la table dept`
+SELECT
+    cleaned.annee,
+    dept.id AS dept_id,   -- Jointure avec la table dept
+    patho.id AS patho_id, -- Jointure avec la table patho (top)
+    cleaned.cla_age_5 AS age,
+    cleaned.sexe AS sex,
+    cleaned.Ntop,
+    cleaned.Npop,
+    cleaned.prev
+FROM
+    alien-oarlock-428016-f3.french_cpam.cleaned_cpam AS cleaned
+JOIN alien-oarlock-428016-f3.french_cpam.patho AS patho
+ ON
+    cleaned.top = patho.id -- Jointure sur la clé top (patho_id)
+JOIN alien-oarlock-428016-f3.french_cpam.dept AS dept
+ ON
+    cleaned.dept = dept.id -- Jointure sur le code département
+;
+```
 
- `patho_id STRING,  -- Foreign Key vers la table patho`
+Ça marche !
 
- `age STRING,  -- classe d'âge`
-
- `sex INT64,  -- sexe (1 pour homme, 2 pour femme, 9 pour tous)`
-
- `Ntop INT64,`
-
- `Npop INT64,`
-
- `prev FLOAT64`
-
-`);`
-
-`-- Insertion des données dans la table patient_stat`
-
-``INSERT INTO `alien-oarlock-428016-f3.french_cpam.patient_stat` (annee, dept_id, patho_id, age, sex, Ntop, Npop, prev)``
-
-`SELECT`
-
- `cleaned.annee,`
-
- `dept.id AS dept_id,  -- Jointure avec la table dept`
-
- `patho.id AS patho_id,  -- Jointure avec la table patho (top)`
-
- `cleaned.cla_age_5 AS age,`
-
- `cleaned.sexe AS sex,`
-
- `cleaned.Ntop,`
-
- `cleaned.Npop,`
-
- `cleaned.prev`
-
-``FROM `alien-oarlock-428016-f3.french_cpam.cleaned_cpam` AS cleaned``
-
-``JOIN `alien-oarlock-428016-f3.french_cpam.patho` AS patho``
-
- `ON cleaned.top = patho.id  -- Jointure sur la clé top (patho_id)`
-
-``JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS dept``
-
- `ON cleaned.dept = dept.id;  -- Jointure sur le code département`
-
-`Ça marche !`
-
-`Big Query affiche “This statement added 4,515,840 rows to patient_stat. “, ce qui correspond au même nombre de lignes que la table cleaned_cpam. Résultat cohérent.`
+Big Query affiche “This statement added 4,515,840 rows to patient_stat. “, ce qui correspond au même nombre de lignes que la table cleaned_cpam. Résultat cohérent.
 
 **Voici la table** :
 
-**![][image25]**
+![][image25]
 
-**![][image26]**
+![][image26]
 
 **\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\***
 
@@ -1352,21 +966,15 @@ L'avantage d'avoir plusieurs petites tables est qu'elles sont plus faciles à g�
 
 ### 1\. Examen de la table *patho*
 
-Cette table contient 77 lignes et 4 colonnes (id, patho\_niv1, patho\_niv2, patho\_niv3). Maintenant que la table est plus petite, elle est plus facile à lire et à examiner. Je remarque que les colonnes 'id' et 'patho\_niv1' sont entièrement remplies. En revanche, les colonnes 'patho\_niv2' et 'patho\_niv3' contiennent des valeurs nulles, comme observé précédemment.
+Cette table contient 77 lignes et 4 colonnes (`id`, `patho_niv1`, `patho_niv2`, `patho_niv3`). Maintenant que la table est plus petite, elle est plus facile à lire et à examiner. Je remarque que les colonnes '`id`' et '`patho_niv1`' sont entièrement remplies. En revanche, les colonnes '`patho_niv2`' et '`patho_niv3`' contiennent des valeurs nulles, comme observé précédemment.
 
-Ces valeurs nulles correspondent à des pathologies sans sous-catégories (ce qui est souvent le cas dans les bases de données médicales) et ne reflètent pas un manque de données, mais plutôt l'absence de sous-division. De plus, je remarque que l'identifiant technique dans la colonne 'id' inclut la chaîne 'CAT' pour décrire les pathologies de niv2 ou niv3 qui contiennent des valeurs nulles.
+Ces valeurs nulles correspondent à des pathologies sans sous-catégories (ce qui est souvent le cas dans les bases de données médicales) et ne reflètent pas un manque de données, mais plutôt l'absence de sous-division. De plus, je remarque que l'identifiant technique dans la colonne '`id`' inclut la chaîne 'CAT' pour décrire les pathologies de niv2 ou niv3 qui contiennent des valeurs nulles.
 
 Exemples :
 
-id \= 'CAT\_CRE\_ACT' pour :
+`id = 'CAT_CRE_ACT'` pour `Cancers (niv1) / Cancer colorectal (niv2) / Cancer colorectal actif (niv3)`
 
-Cancers (niv1) / Cancer colorectal (niv2) / Cancer colorectal actif (niv3)
-
-id \= 'CAT\_CAT\_CAT' pour :
-
-Cancers (niv1) / Null (niv2) / Null (niv3)
-
-
+`id = 'CAN_CAT_CAT'` pour `Cancers (niv1) / Null (niv2) / Null (niv3)`
 
 ![][image27]
 
@@ -1376,11 +984,14 @@ Cette table possède 2 colonnes ('id' qui est le code du département, et 'dept\
 
 Pour voir les départements dans l'ordre :
 
-SELECT \*
-
-FROM \`alien-oarlock-428016-f3.french\_cpam.dept\`
-
-ORDER BY id;
+```sql
+SELECT
+    *
+FROM
+    alien-oarlock-428016-f3.french_cpam.dept
+ORDER BY
+    id;
+```sql
 
 ![][image28]
 
