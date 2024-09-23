@@ -713,8 +713,8 @@ Colonne | Description | Type   |
 `annee` | Équivalent à '`annee`' du jeu de données initial. | int |
 `dept_id` (FK) | Foreign Key vers '`id`' dans la table `dept`. | string |
 `patho_id` (FK) | Foreign Key vers '`id`' de la table `patho`. | string |
-`age` | Équivalent à '`cla_age_5`' du jeu de données initial. Ex. "30-34". | string |
-`sexe | Équivalent à '`sexe`' du jeu de données initial. Ex. 1 pour homme, 2 pour femme, 9 pour tous sexes. | int |
+`age`  | Équivalent à '`cla_age_5`' du jeu de données initial. Ex. "30-34". | string |
+`sexe` | Équivalent à '`sexe`' du jeu de données initial. Ex. 1 pour homme, 2 pour femme, 9 pour tous sexes. | int |
 `Ntop` | Équivalent à '`Ntop`' du jeu de données initial. Nombre de patients traités pour une pathologie spécifique. | int |
 `Npop` | Équivalent à '`Npop`' du jeu de données initial. Base de population utilisée pour les calculs de prévalence. | int |
 `prev` | Équivalent à '`prev`' du jeu de données initial. Prévalence indiquée en pourcentage pour une pathologie donnée. | float |
@@ -1044,7 +1044,7 @@ Je vais commencer par analyser les données les plus récentes (2022) pour répo
 
 Tout ceci sera documenté dans la **Partie 2 de mon article** (lien).
 
-[image1]: images/image01.png
+[image1]: images/image1.png
 [image2]: images/image2.png
 [image3]: images/image3.png
 [image4]: images/image4.png
