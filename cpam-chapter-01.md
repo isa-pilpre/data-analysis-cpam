@@ -120,12 +120,12 @@ Colonne | Description | Type   |
 `top` | libellé technique de la pathologie. Ex. `CAN_CAT_CAT`. | texte |
 `cla_age_5` | Classe d'âge (5 ans). Ex : 30-34. | texte |
 `libelle_classe_age` | le libellé de la classe d'âge, par ex. “de 30 à 34 ans”. | texte |
-`sexe` | 1 pour homme, 2 pour femme, et 9 pour 'tous sexes'. | texte |
+`sexe` | `1` pour homme, `2` pour femme, et `9` pour 'tous sexes'. | texte |
 `libelle_sexe` | le libellé pour le sexe, ex. "homme", "femme", "tous sexes". | texte |
 `region` | code INSEE de chaque région française. D'après ce que je vois sur le site de la CPAM, le code '99' signifie “toutes régions”. | texte |
 `dept` | code INSEE de chaque département français. D'après ce que je vois sur le site de la CPAM, le code '999' signifie 'tous départements'. | texte |
-`Ntop` | effectif de patients pris en charge pour la pathologie (ou traitement chronique ou épisode de soins) dont il est question. | int |
-`Npop` | population de référence qui est celle de la cartographie des pathologies et des dépenses de l'Assurance Maladie. | int |
+`Ntop` | effectif de patients pris en charge pour la pathologie (ou traitement chronique ou épisode de soins) dont il est question. | entier |
+`Npop` | population de référence qui est celle de la cartographie des pathologies et des dépenses de l'Assurance Maladie. | entier |
 `prev` | prévalence de patients pris en charge pour la pathologie (ou traitement chronique ou épisode de soins) dont il est question. Ex. 0.867. | décimal |
 
 ## Petit rappel sur des notions statistiques de base
@@ -285,7 +285,7 @@ FROM
 LIMIT 100;
 ```
 
-Results:
+Résultats:
 
 L'aperçu des données révèle des points intéressants. Notamment, les 3 colonnes des pathologies (niveau 1, 2 et 3) contiennent des cellules avec la valeur *"Total consommants tous régimes"*. Cela ne spécifie pas une pathologie particulière, mais semble plutôt agréger les données pour toutes les pathologies. Pour ces entrées, les champs `Ntop` (nombre de patients traités) et `Npop` (population de référence) affichent le même nombre (10 970) pour le groupe d'âge 0-4 ans, aboutissant à un taux de prévalence calculé de 100 %.
 
@@ -306,7 +306,7 @@ FROM
     alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024;
 ```
 
-**Results:**
+**Résultats:**
 
 Row | patho_niv1 |
 --- | ----- |
@@ -370,7 +370,7 @@ WHERE
 
 **Résultats:**
 
-Results    | Valeurs |
+Résultats    | Valeurs |
 -----------|----|
 37 919 240 | `sum_no_pathology` |
 68 729 230 | `sum_total_consumers` |
@@ -504,7 +504,8 @@ WHERE
 LIMIT 100
 ```
 
-A snippet of the results:
+**Résultats:**
+
 
 **Ce que j'apprends** :
 
@@ -691,30 +692,30 @@ Voici ma structure de base de données :
 
 Colonne | Description | Type   |
 --------|-------------|--------|
-`id` (Clé primaire) | Équivalent à '`top`' du jeu de données initial. | string |
-`patho_niv1` | Équivalent à '`patho_niv1`' du jeu de données initial.  | string |
-`patho_niv2` | Équivalent à '`patho_niv2`' du jeu de données initial.  | string |
-`patho_niv3` | Équivalent à '`patho_niv3`' du jeu de données initial.  | string |
+`id` (Clé primaire) | Équivalent à '`top`' du jeu de données initial. | texte |
+`patho_niv1` | Équivalent à '`patho_niv1`' du jeu de données initial.  | texte |
+`patho_niv2` | Équivalent à '`patho_niv2`' du jeu de données initial.  | texte |
+`patho_niv3` | Équivalent à '`patho_niv3`' du jeu de données initial.  | texte |
 
 ### 2. Table `dept`
 
 Colonne | Description | Type   |
 --------|-------------|--------|
-`id` (Clé primaire) | Équivalent à '`dept`' du jeu de données initial. Code à 2 ou 3 chiffres. Ex. “40” pour les Landes, “2A” pour la Corse-du-Sud, “974” pour l'île de la Réunion, “99” pour tous départements confondus. | string |
-`dept_name` | Nom en toutes lettres du département. Ex. “Landes”. Les valeurs sont à créer car elles n'existent pas dans le jeu initial. | string |
+`id` (Clé primaire) | Équivalent à '`dept`' du jeu de données initial. Code à 2 ou 3 chiffres. Ex. “40” pour les Landes, “2A” pour la Corse-du-Sud, “974” pour l'île de la Réunion, “99” pour tous départements confondus. | texte |
+`dept_name` | Nom en toutes lettres du département. Ex. “Landes”. Les valeurs sont à créer car elles n'existent pas dans le jeu initial. | texte |
 
 ### 3. Table `patient_stat`
 
 Colonne | Description | Type   |
 --------|-------------|--------|
-`annee` | Équivalent à '`annee`' du jeu de données initial. | int |
-`dept_id` (FK) | Foreign Key vers '`id`' dans la table `dept`. | string |
-`patho_id` (FK) | Foreign Key vers '`id`' de la table `patho`. | string |
-`age`  | Équivalent à '`cla_age_5`' du jeu de données initial. Ex. "30-34". | string |
-`sexe` | Équivalent à '`sexe`' du jeu de données initial. Ex. 1 pour homme, 2 pour femme, 9 pour tous sexes. | int |
-`Ntop` | Équivalent à '`Ntop`' du jeu de données initial. Nombre de patients traités pour une pathologie spécifique. | int |
-`Npop` | Équivalent à '`Npop`' du jeu de données initial. Base de population utilisée pour les calculs de prévalence. | int |
-`prev` | Équivalent à '`prev`' du jeu de données initial. Prévalence indiquée en pourcentage pour une pathologie donnée. | float |
+`annee` | Équivalent à '`annee`' du jeu de données initial. | entier |
+`dept_id` (FK) | Foreign Key vers '`id`' dans la table `dept`. | texte |
+`patho_id` (FK) | Foreign Key vers '`id`' de la table `patho`. | texte |
+`age`  | Équivalent à '`cla_age_5`' du jeu de données initial. Ex. "30-34". | texte |
+`sexe` | Équivalent à '`sexe`' du jeu de données initial. Ex. 1 pour homme, 2 pour femme, 9 pour tous sexes. | entier |
+`Ntop` | Équivalent à '`Ntop`' du jeu de données initial. Nombre de patients traités pour une pathologie spécifique. | entier |
+`Npop` | Équivalent à '`Npop`' du jeu de données initial. Base de population utilisée pour les calculs de prévalence. | entier |
+`prev` | Équivalent à '`prev`' du jeu de données initial. Prévalence indiquée en pourcentage pour une pathologie donnée. | décimal |
 
 ---
 
