@@ -4,25 +4,25 @@
 
 Le système d'assurance maladie en France (CPAM) met à disposition du public des jeux de données en open data via leur site data.ameli.fr :
 
-![image1]
+![cpam_01]
 
 En cliquant sur '**Data pathologies**', une page explicative s'affiche, précisant :
 
 > « L'Assurance Maladie met à disposition du grand public un ensemble de données sur une cinquantaine de pathologies, traitements chroniques et épisodes de soins : diabète, syndrome coronaire aigu, insuffisance cardiaque, AVC aigu, cancer du sein, cancer du poumon, maladie de Parkinson, épilepsie, mucoviscidose, traitements anxiolytiques, maternité, etc. Quels sont les effectifs de patients pris en charge pour ces différentes pathologies ? Comment évolue la prévalence ? Comment l'effectif est-il réparti sur le territoire français ? Quelles sont les dépenses remboursées affectées à chacune des pathologies identifiées ? »
 
-![image2]
+![cpam_02]
 
 Bien que de nombreux graphiques et visualisations interactives soient déjà disponibles sur cette page, je choisis de réaliser ma propre analyse des données. Pour ce faire, je clique sur l'onglet '**Données complètes**', où un jeu de données m'intéresse particulièrement :
 
-![image3]
+![cpam_03]
 
 Lorsque je clique dessus, les métadonnées indiquent qu'il s'agit d'un jeu de données couvrant les années 2015 à 2022, récemment actualisé en juillet 2024, ce qui est une bonne nouvelle :
 
-![image4]
+![cpam_04]
 
 Ce jeu de données concerne les effectifs de patients pris en charge par la CPAM selon les années, les pathologies, les tranches d'âge, le sexe et les territoires (régions et départements) :
 
-![image5]
+![cpam_05]
 
 Ce jeu va me donner l'occasion d'appliquer mes nouvelles compétences en analyse de données à l'aide de SQL, BigQuery, R et Tableau. Voici ci-après le déroulé de mon analyse.
 
@@ -40,17 +40,17 @@ J'affinerai sans doute ces questions à mesure que j'avance dans mon analyse, ma
 
 Ce jeu de données est disponible dans différents formats, y compris CSV, JSON, Excel et Parquet. Je choisis le format CSV, car c'est celui qui m'est le plus familier.
 
-![image6]
+![cpam_06]
 *fig6. Jeu de données de la CPAM en plusieurs formats*
 
 Le fichier CSV fait tout de même 800 Mo, ce qui dépasse les capacités d'Excel ou de Google Sheets. Je préfère ne pas surcharger les ressources de mon propre ordinateur, aussi je décide d'aller sur Google Cloud Storage (GCS) pour stocker mon jeu de données. C'est la solution la plus pratique pour moi, car GSC est étroitement intégré à BigQuery, que j'ai déjà utilisé plusieurs fois dans le cadre de ma formation de Data Analyste. Après m'être inscrite sur Google Cloud Platform, je suis prête à commencer. *'Welcome'*, me claironne le système alors que je navigue à travers la configuration initiale.
 
-![image7]
+![cpam_07]
 *fig7. Page de bienvenue de Google Cloud*
 
 Lorsque j'ouvre ma console Google, je vois que BigQuery et Cloud Storage sont tous deux situés dans le même panneau de navigation à gauche, aux côtés de SQL et de plusieurs autres services, ce qui est très pratique. Sur le côté droit de l'écran, je remarque que le système m'a attribué un nom de projet, *'My First Project'*, et un ID de projet étrangement nommé *'alien-oarlock-428016-f3'* :
 
-![image8]
+![cpam_08]
 *fig8. Google console*
 
 Je transfère mon fichier CSV original, que j'ai nommé `CPAM_effectifs_2024_July.csv`, dans un nouveau *Bucket* que j'ai créé sur Google Cloud Storage. Ensuite, je dois le rendre accessible dans BigQuery pour l'analyse.
@@ -59,22 +59,22 @@ Je transfère mon fichier CSV original, que j'ai nommé `CPAM_effectifs_2024_Jul
 
 Je navigue vers l'interface de BigQuery et repère mon ID de projet, `alien-oarlock-428016-f3`, dans le panneau Explorer à gauche de l'écran. À côté de l'ID de projet, je clique sur le menu à trois points verticaux et sélectionne *'Create dataset'*.
 
-![image9]
+![cpam_09]
 
 Une fenêtre s'affiche, avec l'ID de projet déjà renseigné. Je tape `french_cpam` dans la zone de texte Dataset ID :
 
-![image10]
+![cpam_10]
 
 Désormais, je vois que sous mon ID de projet, le dataset nouvellement créé `french_cpam` apparaît.
 
 Ensuite, je clique à nouveau sur le menu à trois points verticaux, mais à côté de l'ID du dataset cette fois, et je sélectionne *'Create table'*.
 
-![image11]
+![cpam_11]
 
 Dans la fenêtre contextuelle qui s'affiche, je définis la source sur *'Google Cloud Storage'* et je recherche le fichier CSV que je viens de transférer. Dans la section de destination, l'ID de projet '*alien-oarlock-428016-f3'* et l'ID de dataset '*french\_cpam'* sont déjà prédéfinis.
 Je nomme la table *'cpam\_effectifs\_july\_2024'* et sélectionne *'Auto detect'* (détection automatique) pour laisser le système détecter automatiquement la structure de mon fichier, ce qui simplifie la configuration. Enfin, je clique sur *'Create table*' pour finaliser le processus :
 
-![image12]
+![cpam_12]
 
 Aïe. Je tombe sur un obstacle.
 
@@ -103,13 +103,13 @@ Maintenant que mon jeu de données est configuré sous forme de table dans BigQu
 
 Commençons par examiner le modèle de données et les 100 premières lignes de la table pour avoir un aperçu préliminaire. Il existe plusieurs façons de procéder. La plus immédiate, c'est de consulter le site de la CPAM où j'ai téléchargé mes données :
 
-![image13]
+![cpam_13]
 
 Sous le premier onglet *'Informations'*, si je fais défiler la page vers le bas jusqu'à *'Modèle de données',* je peux glaner beaucoup d'informations fondamentales sur les données et les différentes colonnes de la table.
 
 Également, je peux aller sur le deuxième onglet intitulé *'Tableau'* pour visualiser les premières lignes du jeu de données :
 
-![image14]
+![cpam_14]
 
 Lorsque j'examine les premières lignes de la table et le modèle de données fourni, je découvre que le jeu de données se compose d'une grande table avec une douzaine de colonnes. Voici un aperçu des principales colonnes, avec leur type de données :
 
@@ -535,7 +535,7 @@ ORDER BY
 
 **Résultats:**
 
-![image15]
+![cpam_15]
 
 Les résultats montrent des tendances pour lesquelles certains groupes d'âge, comme les très jeunes ou les très âgés, n'ont aucun cas enregistré pour certaines pathologies, telles que des maladies inflammatoires ou des cancers. De plus, certains sexes n'ont pas de cas enregistrés pour des conditions spécifiques, comme les patients masculins pour le cancer du sein féminin. Ces résultats renforcent mon idée que les valeurs nulles dans `Ntop` (nombre de patients) sont cohérentes avec les tendances démographiques attendues de la prévalence des maladies.
 
@@ -613,9 +613,9 @@ LIMIT 30
 
 Les plus grandes différences entre `prev` et `calculated_prev` concernent principalement les personnes âgées, en particulier celles de 95 ans et plus, ainsi que les 85-89 ans. Ces écarts apparaissent lorsque les valeurs de `Ntop` et `Npop` sont petites et semblent arrondies de manière inhabituelle (120, 190, 110, 200, etc.). Cela pourrait indiquer des ajustements ou un lissage dans le processus de calcul des prévalences pour ces tranches d'âge, où les effectifs sont plus faibles et plus susceptibles de variations.
 
-![image16]
+![cpam_16]
 
-![image17]
+![cpam_17]
 
 Ces résultats ne m'inquiètent pas vraiment pour mon projet d'analyse. Cependant, dans un contexte professionnel, si je travaillais pour une entreprise propriétaire de ce jeu de données, j'aurais clarifié ce mystère en prenant contact avec la partie prenante responsable de la collecte et de la création des données. J'aurais posé de nombreuses questions jusqu'à m'assurer d'avoir parfaitement compris ce que représentent précisément les colonnes `prev`, `Ntop`, `Npop`, ainsi que les autres champs.
 
@@ -658,17 +658,17 @@ WHERE
 
 La table `cleaned_cpam` est bien créée :
 
-![image18]
+![cpam_18]
 
 Ça a l'air de marcher ! Je n'ai effectivement que les colonnes qui m'intéressent.
 
 Quand je clique sur Preview, je vois que le nombre de mes rangées est désormais de 4.515.840, inférieur au nombre initial de 4.636.840 (soit environ cent mille rangées en moins).
 
-![image19]
+![cpam_19]
 
 Je vérifie quand même que les lignes contenant "Total consommants" ou "Pas de pathologies" dans la colonne `patho_niv1` ont bien été exclues :
 
-![image20]
+![cpam_20]
 
 J'obtiens désormais la table *cleaned\_cpam*, plus petite et “nettoyée”, qui ne contient que les informations pertinentes pour mon analyse.
 
@@ -761,9 +761,9 @@ GROUP BY -- pour éviter les doublons
 
 Parfait, ça marche, avec une table à 77 lignes :
 
-![image21]
+![cpam_21]
 
-![image22]
+![cpam_22]
 
 ### 2. Création et remplissage de la table *dpt*
 
@@ -895,9 +895,9 @@ VALUES
 
 Résultats:
 
-![image23]
+![cpam_23]
 
-![image24]
+![cpam_24]
 
 Ça marche, j'ai bien 102 entrées (les 101 départements français et l'entrée '`999`' pour 'tous départements').
 
@@ -962,9 +962,9 @@ Big Query affiche “This statement added 4,515,840 rows to patient_stat. “, c
 
 **Voici la table** :
 
-![image25]
+![cpam_25]
 
-![image26]
+![cpam_26]
 
 **\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\*\***
 
@@ -987,7 +987,7 @@ Id            |  Libellés |
 `CAT_CRE_ACT` | Cancers (niv1) / Cancer colorectal (niv2) / Cancer colorectal actif (niv3) |
 `CAN_CAT_CAT` | Cancers (niv1) / Null (niv2) / Null (niv3) |
 
-![image27]
+![cpam_27]
 
 ### 2. Examen de la table *dpt*
 
@@ -1004,15 +1004,15 @@ ORDER BY
     id;
 ```
 
-![image28]
+![cpam_28]
 
 Petite vérification pour s'assurer que les deux départements de Corse sont bien inclus:
 
-![image29]
+![cpam_29]
 
 Ainsi que les cinq départements d'Outre-mer:
 
-![image30]
+![cpam_30]
 
 ### 3. Examen de la table *patient\_stat*
 
@@ -1020,7 +1020,7 @@ Il s'agit de la table la plus large, avec 8 colonnes et plus de 4,5 millions de 
 
 Elle contient des valeurs Null dans les colonnes `Ntop` et `prev`, comme attendu.
 
-![image26]
+![cpam_26]
 
 Comme on l'a déjà évoqué, les valeurs Null dans les colonnes `Ntop` et `prev` semblent indiquer des situations où il n'y a pas de patients traités pour une pathologie donnée dans une tranche d'âge ou un sexe spécifique. Par exemple, un groupe démographique peut ne pas être affecté par une pathologie particulière, d'où les valeurs Null dans `Ntop` (nombre de patients) et `prev` (prévalence).
 
@@ -1042,33 +1042,33 @@ Je vais commencer par analyser les données les plus récentes (2022) pour répo
 
 Tout ceci sera documenté dans la **Partie 2 de mon article** (lien).
 
-[image1]: images/image1.png
-[image2]: images/image2.png
-[image3]: images/image3.png
-[image4]: images/image4.png
-[image5]: images/image5.png
-[image6]: images/image6.png
-[image7]: images/image7.png
-[image8]: images/image8.png
-[image9]: images/image9.png
-[image10]: images/image10.png
-[image11]: images/image11.png
-[image12]: images/image12.png
-[image13]: images/image13.png
-[image14]: images/image14.png
-[image15]: images/image15.png
-[image16]: images/image16.png
-[image17]: images/image17.png
-[image18]: images/image18.png
-[image19]: images/image19.png
-[image20]: images/image20.png
-[image21]: images/image21.png
-[image22]: images/image22.png
-[image23]: images/image23.png
-[image24]: images/image24.png
-[image25]: images/image25.png
-[image26]: images/image26.png
-[image27]: images/image27.png
-[image28]: images/image28.png
-[image29]: images/image29.png
-[image30]: images/image30.png
+[cpam_01]: images/cpam_01.png
+[cpam_02]: images/cpam_02.png
+[cpam_03]: images/cpam_03.png
+[cpam_04]: images/cpam_04.png
+[cpam_05]: images/cpam_05.png
+[cpam_06]: images/cpam_06.png
+[cpam_07]: images/cpam_07.png
+[cpam_08]: images/cpam_08.png
+[cpam_09]: images/cpam_09.png
+[cpam_10]: images/cpam_10.png
+[cpam_11]: images/cpam_11.png
+[cpam_12]: images/cpam_12.png
+[cpam_13]: images/cpam_13.png
+[cpam_14]: images/cpam_14.png
+[cpam_15]: images/cpam_15.png
+[cpam_16]: images/cpam_16.png
+[cpam_17]: images/cpam_17.png
+[cpam_18]: images/cpam_18.png
+[cpam_19]: images/cpam_19.png
+[cpam_20]: images/cpam_20.png
+[cpam_21]: images/cpam_21.png
+[cpam_22]: images/cpam_22.png
+[cpam_23]: images/cpam_23.png
+[cpam_24]: images/cpam_24.png
+[cpam_25]: images/cpam_25.png
+[cpam_26]: images/cpam_26.png
+[cpam_27]: images/cpam_27.png
+[cpam_28]: images/cpam_28.png
+[cpam_29]: images/cpam_29.png
+[cpam_30]: images/cpam_30.png
