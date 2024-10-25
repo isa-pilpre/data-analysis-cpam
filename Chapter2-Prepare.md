@@ -4,8 +4,7 @@
 
 Le jeu de données de la CPAM est disponible dans différents formats, y compris CSV, JSON, Excel et Parquet. Je choisis le format CSV, car c'est celui qui m'est le plus familier.
 
-![cpam_06]
-*fig6. Jeu de données de la CPAM en plusieurs formats*
+![](images/cpam_06.png)
 
 
 ## 2. Organisation des données
@@ -14,8 +13,8 @@ Le projet est géré dans un dépôt Git (`git-repos/data-analysis-cpam`) pour u
 
 Le dépôt git `data-analysis-cpam` possède les sous-répertoires suivants :
 
-- `R`: scripts R utilisés pour l'analyse des données et la visualisation.
-- `Python`: scripts Pythonutilisés pour l'analyse des données et la visualisation.
+- `R`: scripts R. 
+- `Python`: scripts Python.
 - `SQL`: requêtes SQL (dans BigQuery) utilisées pour l'extraction, le filtrage et la transformation des données.
 - `CSV`: tous les fichiers CSV utilisés et générés durant l'analyse.
 - `images`: toutes les visualisations et graphes générés durant le projet.
@@ -35,40 +34,36 @@ Le fichier CSV fait presque 800 Mo, ce qui dépasse les capacités d'Excel ou de
 
 ### Accès dans Google Cloud
 
-![cpam_07]
-*fig7. Page de bienvenue de Google Cloud*
+![Page de bienvenue de Google Cloud](images/cpam_07.png)
 
-Lorsque j'ouvre ma console Google, je vois que BigQuery et Cloud Storage sont tous deux situés dans le même panneau de navigation à gauche, aux côtés de SQL et de plusieurs autres services, ce qui est très pratique. Sur le côté droit de l'écran, je remarque que le système m'a attribué un nom de projet, *'My First Project'*, et un ID de projet étrangement nommé *'alien-oarlock-428016-f3'* :
+Lorsque j'ouvre ma console Google, je vois que BigQuery et Cloud Storage sont tous deux situés dans le même panneau de navigation à gauche, aux côtés de SQL et de plusieurs autres services, ce qui est très pratique. Sur le côté droit de l'écran, je remarque que le système m'a attribué un nom de projet, `My First Project`, et un ID de projet étrangement nommé `alien-oarlock-428016-f3` :
 
-![cpam_08]
-*fig8. Google console*
+![ ](images/cpam_08.png)
 
-Je transfère mon fichier CSV original, que j'ai nommé `CPAM_effectifs_2024_July.csv`, dans un nouveau *Bucket* que j'ai créé sur Google Cloud Storage. Ensuite, je dois le rendre accessible dans BigQuery pour l'analyse.
+Je transfère mon fichier CSV original, que j'ai nommé `CPAM_effectifs_2024_July.csv`, dans un nouveau "Bucket" que j'ai créé sur Google Cloud Storage. Ensuite, je dois le rendre accessible dans BigQuery pour l'analyse.
 
 ### Accès dans BigQuery
 
 Je navigue vers l'interface de BigQuery et repère mon ID de projet, `alien-oarlock-428016-f3`, dans le panneau Explorer à gauche de l'écran. À côté de l'ID de projet, je clique sur le menu à trois points verticaux et sélectionne *'Create dataset'*.
 
-![cpam_09]
+![ ](images/cpam_09.png)
 
-Une fenêtre s'affiche, avec l'ID de projet déjà renseigné. Je tape `french_cpam` dans la zone de texte Dataset ID :
+Une fenêtre s'affiche, avec l'ID de projet déjà renseigné. Je tape `french_cpam` dans la zone de texte Dataset ID, et change `Location type` sur `Multi-region` / `EU (multiple regions in Europe)`.
 
-![cpam_10]
+![ ](images/cpam_10.png)
 
 Désormais, je vois que sous mon ID de projet, le dataset nouvellement créé `french_cpam` apparaît.
 
-Ensuite, je clique à nouveau sur le menu à trois points verticaux, mais à côté de l'ID du dataset cette fois, et je sélectionne *'Create table'*.
+Ensuite, je clique à nouveau sur le menu à trois points verticaux, mais à côté de l'ID du dataset cette fois, et je sélectionne `Create table`.
 
-![cpam_11]
+![ ](images/cpam_11.png)
 
-Dans la fenêtre contextuelle qui s'affiche, je définis la source sur *'Google Cloud Storage'* et je recherche le fichier CSV que je viens de transférer. Dans la section de destination, l'ID de projet '*alien-oarlock-428016-f3'* et l'ID de dataset '*french\_cpam'* sont déjà prédéfinis.
-Je nomme la table *'cpam\_effectifs\_july\_2024'* et sélectionne *'Auto detect'* (détection automatique) pour laisser le système détecter automatiquement la structure de mon fichier, ce qui simplifie la configuration. Enfin, je clique sur *'Create table*' pour finaliser le processus :
+Dans la fenêtre contextuelle qui s'affiche, je définis la source sur `Google Cloud Storage` et je recherche le fichier CSV que je viens de transférer. Dans la section de destination, l'ID de projet `alien-oarlock-428016-f3` et l'ID de dataset `french_cpam` sont déjà prédéfinis.
+Je nomme la table `cpam_effectifs_july_2024` et sélectionne `Auto detect` pour laisser le système détecter automatiquement la structure de mon fichier, ce qui simplifie la configuration. Enfin, je clique sur `Create table` pour finaliser le processus :
 
-![cpam_12]
+![ ](images/cpam_12.png)
 
-Aïe. Je tombe sur un obstacle.
-
-Un message d'erreur s'affiche :
+Aïe. Un message d'erreur s'affiche :
 
 > Failed to create table: Error while reading data, error message: CSV table encountered too many errors, giving up.
 > Rows: 10600; errors: 100.
@@ -77,12 +72,12 @@ Un message d'erreur s'affiche :
 
 Quand je reviens à mon fichier CSV, je réalise que le séparateur dans ce fichier est un point-virgule (`;`), et non la virgule (`,`) plus habituelle aux États-Unis.
 
-Jetons un coup d'œil plus attentif à la fenêtre de création de table dans BigQuery... Ah, j'ai trouvé ! Caché près du bas de la fenêtre de création de table, il y a un lien intitulé *'Advanced options' (*ne jamais ignorer les paramètres avancés*). Lorsque j'agrandis cette section, je trouve un paramètre appelé  *'Field delimiter'*, prédéfini sur *'Comma'* (Virgule). Si je fais défiler les options, je vois des choix comme *'Tab'*, *'Pipe'*, ou *'Custom'*. Choisissons *'Custom'* (Personnalisé) et définissons le délimiteur sur le point-virgule.
+En revenant à la fenêtre de création de table dans BigQuery, vers le bas de cette fenêtre, je vois un lien `Advanced options`. Lorsque j'agrandis cette section, un paramètre appelé  `Field delimiter` est prédéfini sur `Comma` (virgule). Si je fais défiler les options, je vois des choix comme `Tab`, `Pipe`, ou `Custom`. Choisissons `Custom` (personnalisé) et définissons le délimiteur sur le point-virgule.
 
 Un message en rouge m'informe que le délimiteur personnalisé ne doit contenir qu'un seul caractère.
 
-Je tape simplement le caractère du point-virgule, c'est-à-dire '`;`'.
+Je tape simplement le caractère du point-virgule, c'est-à-dire `;`.
 
-Je clique à nouveau sur *'Create Table'*.  Ça marche ! BigQuery confirme : `'cpam_effectifs_july_2024' created.`
+Je clique à nouveau sur `Create Table`.  Ça marche ! BigQuery confirme : `cpam_effectifs_july_2024' created.`
 
-Me voilà prête pour la prochaine phase (Process / Cleaning).
+Les données sont désormais prêtes pour la prochaine phase (Process / Cleaning).

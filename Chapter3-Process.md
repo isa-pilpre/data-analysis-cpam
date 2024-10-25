@@ -4,13 +4,13 @@
 
 Commençons par examiner le modèle de données et les 100 premières lignes de la table pour avoir un aperçu préliminaire. Il existe plusieurs façons de procéder. La plus immédiate, c'est de consulter le site de la CPAM où j'ai téléchargé mes données :
 
-![cpam_13]
+![ ](images/cpam_16.png)
 
-Sous le premier onglet *'Informations'*, si je fais défiler la page vers le bas jusqu'à *'Modèle de données',* je peux glaner beaucoup d'informations fondamentales sur les données et les différentes colonnes de la table.
+Sous le premier onglet `Informations`, si je fais défiler la page vers le bas jusqu'à `Modèle de données`, je peux glaner beaucoup d'informations fondamentales sur les données et les différentes colonnes de la table.
 
-Également, je peux aller sur le deuxième onglet intitulé *'Tableau'* pour visualiser les premières lignes du jeu de données :
+Également, je peux aller sur le deuxième onglet intitulé `Tableau` pour visualiser les premières lignes du jeu de données :
 
-![cpam_14]
+![ ](images/cpam_17.png)
 
 Lorsque j'examine les premières lignes de la table et le modèle de données fourni, je découvre que le jeu de données se compose d'une grande table avec une douzaine de colonnes. Voici un aperçu des principales colonnes, avec leur type de données :
 
@@ -19,15 +19,15 @@ Colonne | Description | Type   |
 `annee` | les années que couvre cette période d'analyse, qui s'étendent actuellement de 2015 à 2022. | date |
 `patho_niv1`, `patho_niv2`, `patho_niv3` | groupe ou sous-groupe de pathologies (ou traitements chroniques ou épisodes de soins). | texte |
 `top` | libellé technique de la pathologie. Ex. `CAN_CAT_CAT`. | texte |
-`cla_age_5` | Classe d'âge (5 ans). Ex : 30-34. | texte |
-`libelle_classe_age` | le libellé de la classe d'âge, par ex. “de 30 à 34 ans”. | texte |
+`cla_age_5` | classe d'âge (tranche de 5 années). Ex : `30-34`. | texte |
+`libelle_classe_age` | classe d'âge en toutes lettres, par ex. `de 30 à 34 ans`. | texte |
 `sexe` | `1` pour homme, `2` pour femme, et `9` pour 'tous sexes'. | texte |
-`libelle_sexe` | le libellé pour le sexe, ex. "homme", "femme", "tous sexes". | texte |
-`region` | code INSEE de chaque région française. D'après ce que je vois sur le site de la CPAM, le code '99' signifie “toutes régions”. | texte |
-`dept` | code INSEE de chaque département français. D'après ce que je vois sur le site de la CPAM, le code '999' signifie 'tous départements'. | texte |
+`libelle_sexe` | trois options : `homme`, `femme`, `tous sexes`. | texte |
+`region` | code INSEE de chaque région française. Le code `99` signifie `toutes régions`. | texte |
+`dept` | code INSEE de chaque département. Le code `999` signifie `tous départements`. | texte |
 `Ntop` | effectif de patients pris en charge pour la pathologie (ou traitement chronique ou épisode de soins) dont il est question. | entier |
 `Npop` | population de référence qui est celle de la cartographie des pathologies et des dépenses de l'Assurance Maladie. | entier |
-`prev` | prévalence de patients pris en charge pour la pathologie (ou traitement chronique ou épisode de soins) dont il est question. Ex. 0.867. | décimal |
+`prev` | prévalence de patients pris en charge pour la pathologie (ou traitement chronique ou épisode de soins) dont il est question. Ex. `0.867`. | décimal |
 
 ## Petit rappel sur des notions statistiques de base
 
