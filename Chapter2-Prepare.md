@@ -2,7 +2,7 @@
 
 ## 1. Source de données
 
-Le jeu de données de la CPAM est disponible dans différents formats, y compris CSV, JSON, Excel et Parquet. Je choisis le format CSV, car c'est celui qui m'est le plus familier.
+Le jeu de données de la CPAM est disponible dans différents formats, y compris CSV, JSON, Excel et Parquet. Je choisis le fichier `CPAM_effectifs_2024_July.csv`, car c'est le format qui m'est le plus familier.
 
 ![](images/cpam_06.png)
 
@@ -30,7 +30,7 @@ Des sous-répertoires complémentaires incluent :
 
 ## 3. Préparation du jeu de données de la CPAM
 
-Le fichier CSV fait presque 800 Mo, ce qui dépasse les capacités d'Excel ou de Google Sheets. Je préfère ne pas surcharger les ressources de mon propre ordinateur, aussi je décide d'aller sur Google Cloud Storage (GCS) pour stocker mon jeu de données. C'est la solution la plus pratique pour moi, car GSC se trouve dans la même plateforme Google Cloud que BigQuery, que j'ai déjà utilisé plusieurs fois. Après m'être inscrite sur Google Cloud Platform, je suis prête à commencer.
+Le fichier `CPAM_effectifs_2024_July.csv` fait presque 800 Mo, ce qui dépasse les capacités d'Excel ou de Google Sheets. Je préfère ne pas surcharger les ressources de mon propre ordinateur, aussi je décide d'aller sur Google Cloud Storage (GCS) pour stocker mon jeu de données. C'est la solution la plus pratique pour moi, car GSC se trouve dans la même plateforme Google Cloud que BigQuery, que j'ai déjà utilisé plusieurs fois. Après m'être inscrite sur Google Cloud Platform, je suis prête à commencer.
 
 ### Accès dans Google Cloud
 
@@ -40,7 +40,7 @@ Lorsque j'ouvre ma console Google, je vois que BigQuery et Cloud Storage sont to
 
 ![ ](images/cpam_08.png)
 
-Je transfère mon fichier CSV original, que j'ai nommé `CPAM_effectifs_2024_July.csv`, dans un nouveau "Bucket" que j'ai créé sur Google Cloud Storage. Ensuite, je dois le rendre accessible dans BigQuery pour l'analyse.
+Je transfère mon fichier `CPAM_effectifs_2024_July.csv` dans un nouveau "Bucket" que j'ai créé sur Google Cloud Storage. Ensuite, je dois le rendre accessible dans BigQuery pour l'analyse.
 
 ### Accès dans BigQuery
 
