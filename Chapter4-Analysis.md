@@ -22,7 +22,7 @@ Id            |  Libellés |
 `CAN_CAT_CAT` | Cancers (niv1) / Null (niv2) / Null (niv3) |
 
 
-Pour y voir plus clair, je fais un `Export` / `Explore with Sheets` depuis BigQuery pour ouvrir cette table dans Google Sheets. Là je surligne les pathologies qui m'intéressent ppur mon analyse exploratoire. 
+Pour y voir plus clair, je fais un `Export` / `Explore with Sheets` depuis BigQuery pour ouvrir cette table dans Google Sheets, où je surligne les pathologies qui m'intéressent pour mon analyse exploratoire. 
 
 ![](images/cpam_50.png)
 
@@ -63,7 +63,7 @@ Les pathologies que je vais garder sont celles-ci, avec leur nouveau libellé da
 | RES_CAT_EXC | Maladies respiratoires chroniques (hors mucoviscidose)    |
 
 
-C'est sans doute plus qu'il n'en faut pour ce projet personnel, mais je pourrai toujours explorer ces pistes plus tard.
+C'est sans doute plus qu'il n'en faut pour ce projet personnel, mais je peux toujours explorer des pistes plus tard.
 
 - Étape 1 : Création de la table `filtered_patho`
 
@@ -83,7 +83,7 @@ WHERE id IN (
 
 - Étape 2 : Ajout d'une colonne `libelle` et mise à jour des libellés avec Python
 
-Comme il est facile d'intégrer un script Python dans un notebook de Google Query, j'exécute le script suivant pour ajouter et remplir une nouvelle colonne `libelle` dans la table `filtered_patho` :
+Comme il est facile d'intégrer un script Python dans un notebook de Google Query, j'exécute le script Python suivant pour ajouter et remplir une nouvelle colonne `libelle` dans la table `filtered_patho` :
 
 ``` python
 from google.cloud import bigquery
@@ -179,9 +179,9 @@ ON ps.dept_id = d.id
 
 WHERE ps.annee = 2022
 AND   ps.age = "tsage"
-AND   ps.sex = 9
+AND   ps.sex = 9            -- tous sexes confondus
 AND   fp.id = "CAN_BPU_CAT" -- code pour le cancer bronchopumonaire
-AND   d.id != "999" 
+AND   d.id != "999"         -- pour éviter les doublons avec l'agrégation des départements
 
 ORDER BY ps.prev DESC
 LIMIT 10 ;
@@ -221,9 +221,9 @@ ON ps.dept_id = d.id
 
 WHERE ps.annee = 2022
 AND   ps.age = "tsage"
-AND   ps.sex = 9
+AND   ps.sex = 9            -- tous sexes confondus
 AND   fp.id = "CAN_CRE_CAT" -- code pour le cancer colorectal
-AND   d.id != "999" 
+AND   d.id != "999"         -- pour éviter les doublons avec l'agrégation des départements
 
 ORDER BY ps.prev DESC
 LIMIT 10 ;
@@ -246,6 +246,337 @@ Résultat:
 | 10  | 0.728| Cancer colorectal | 12 | Aveyron        |
 
 
+### Prévalence du cancer du sein en France en 2022
+
+``` sql 
+SELECT 
+    ps.prev,
+    fp.libelle,
+    d.id,
+    d.nom_dept,
+    
+FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` as ps
+JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` as fp
+ON ps.patho_id = fp.id
+JOIN `alien-oarlock-428016-f3.french_cpam.dept` as d
+ON ps.dept_id = d.id
+
+WHERE ps.annee = 2022
+AND   ps.age = "tsage"
+AND   ps.sex = 2            -- cancer du sein exclusivemnt féminin
+AND   fp.id = "CAN_SEI_CAT" -- code pour le cancer du sein
+AND   d.id != "999"         -- pour éviter les doublons avec l'agrégation des départements
+
+ORDER BY ps.prev DESC
+LIMIT 10 ;
+```
+
+
+Résultat:
+
+| Row | prev | libelle                     | id | nom_dept           |
+|-----|------|------------------------------|----|---------------------|
+| 1   | 2.712 | Cancer du sein de la femme   | 58 | Nièvre             |
+| 2   | 2.7   | Cancer du sein de la femme   | 03 | Allier             |
+| 3   | 2.668 | Cancer du sein de la femme   | 57 | Moselle            |
+| 4   | 2.632 | Cancer du sein de la femme   | 2A | Corse-du-Sud       |
+| 5   | 2.604 | Cancer du sein de la femme   | 23 | Creuse             |
+| 6   | 2.583 | Cancer du sein de la femme   | 87 | Haute-Vienne       |
+| 7   | 2.548 | Cancer du sein de la femme   | 15 | Cantal             |
+| 8   | 2.458 | Cancer du sein de la femme   | 52 | Haute-Marne        |
+| 9   | 2.448 | Cancer du sein de la femme   | 17 | Charente-Maritime  |
+| 10  | 2.441 | Cancer du sein de la femme   | 46 | Lot               |
+
+
+### Prévalence du cancer de la prostate en France en 2022
+
+``` sql 
+SELECT 
+    ps.prev,
+    fp.libelle,
+    d.id,
+    d.nom_dept,
+    
+FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` as ps
+JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` as fp
+ON ps.patho_id = fp.id
+JOIN `alien-oarlock-428016-f3.french_cpam.dept` as d
+ON ps.dept_id = d.id
+
+WHERE ps.annee = 2022
+AND   ps.age = "tsage"
+AND   ps.sex = 1             -- cancer prostate exclusivemnt masculin
+AND   fp.id = "CAN_PRO_CAT"  -- code pour le cancer de la prostate
+AND   d.id != "999"          -- pour éviter les doublons avec l'agrégation des départements
+
+ORDER BY ps.prev DESC
+LIMIT 10 ;
+```
+
+
+Résultat:
+
+| Row | prev  | libelle               | id  | nom_dept          |
+|-----|-------|------------------------|-----|--------------------|
+| 1   | 3.206 | Cancer de la prostate  | 972 | Martinique        |
+| 2   | 3.161 | Cancer de la prostate  | 971 | Guadeloupe        |
+| 3   | 3.003 | Cancer de la prostate  | 23  | Creuse            |
+| 4   | 2.858 | Cancer de la prostate  | 15  | Cantal            |
+| 5   | 2.704 | Cancer de la prostate  | 87  | Haute-Vienne      |
+| 6   | 2.607 | Cancer de la prostate  | 03  | Allier            |
+| 7   | 2.473 | Cancer de la prostate  | 24  | Dordogne          |
+| 8   | 2.432 | Cancer de la prostate  | 36  | Indre             |
+| 9   | 2.416 | Cancer de la prostate  | 17  | Charente-Maritime |
+| 10  | 2.405 | Cancer de la prostate  | 52  | Haute-Marne       |
+
+
+### Prévalence du diabète en France en 2022
+
+``` sql 
+SELECT 
+    ps.prev,
+    fp.libelle,
+    d.id,
+    d.nom_dept,
+    
+FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` as ps
+JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` as fp
+ON ps.patho_id = fp.id
+JOIN `alien-oarlock-428016-f3.french_cpam.dept` as d
+ON ps.dept_id = d.id
+
+WHERE ps.annee = 2022
+AND   ps.age = "tsage"
+AND   ps.sex = 9             -- tous sexes confondus
+AND   fp.id = "DIA_CAT_CAT"  -- code pour le diabète
+AND   d.id != "999"          -- pour éviter les doublons avec l'agrégation des départements
+
+ORDER BY ps.prev DESC
+LIMIT 10 ;
+```
+
+
+Résultat:
+
+| Row | prev   | libelle | id  | nom_dept        |
+|-----|--------|---------|-----|-----------------|
+| 1   | 11.274 | Diabète | 971 | Guadeloupe      |
+| 2   | 10.526 | Diabète | 972 | Martinique      |
+| 3   | 9.468  | Diabète | 58  | Nièvre          |
+| 4   | 9.077  | Diabète | 974 | La Réunion      |
+| 5   | 8.855  | Diabète | 23  | Creuse          |
+| 6   | 8.386  | Diabète | 36  | Indre           |
+| 7   | 8.217  | Diabète | 03  | Allier          |
+| 8   | 8.183  | Diabète | 57  | Moselle         |
+| 9   | 8.154  | Diabète | 02  | Aisne           |
+| 10  | 8.134  | Diabète | 08  | Ardennes        |
+
+
+### Prévalence de la sclérose en plaques en France en 2022
+
+``` sql 
+SELECT 
+    ps.prev,
+    fp.libelle,
+    d.id,
+    d.nom_dept,
+    
+FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` as ps
+JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` as fp
+ON ps.patho_id = fp.id
+JOIN `alien-oarlock-428016-f3.french_cpam.dept` as d
+ON ps.dept_id = d.id
+
+WHERE ps.annee = 2022
+AND   ps.age = "tsage"
+AND   ps.sex = 9             -- tous sexes confondus
+AND   fp.id = "NEU_SEP_IND"  -- code pour la sclérose en plaques
+AND   d.id != "999"          -- pour éviter les doublons avec l'agrégation des départements
+
+ORDER BY ps.prev DESC
+LIMIT 10 ;
+```
+
+
+Résultat:
+
+| Row | prev  | libelle              | id  | nom_dept            |
+|-----|-------|-----------------------|-----|----------------------|
+| 1   | 0.289 | Sclérose en plaques   | 90  | Territoire de Belfort|
+| 2   | 0.274 | Sclérose en plaques   | 57  | Moselle             |
+| 3   | 0.266 | Sclérose en plaques   | 52  | Haute-Marne         |
+| 4   | 0.255 | Sclérose en plaques   | 55  | Meuse              |
+| 5   | 0.247 | Sclérose en plaques   | 70  | Haute-Saône         |
+| 6   | 0.247 | Sclérose en plaques   | 67  | Bas-Rhin           |
+| 7   | 0.242 | Sclérose en plaques   | 54  | Meurthe-et-Moselle |
+| 8   | 0.239 | Sclérose en plaques   | 08  | Ardennes           |
+| 9   | 0.233 | Sclérose en plaques   | 21  | Côte-d'Or          |
+| 10  | 0.233 | Sclérose en plaques   | 80  | Somme              |
+
+
+### Prévalence des maladies du foie ou du pancréas (hors mucoviscidose) en France en 2022
+
+``` sql 
+SELECT 
+    ps.prev,
+    fp.libelle,
+    d.id,
+    d.nom_dept,
+    
+FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` as ps
+JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` as fp
+ON ps.patho_id = fp.id
+JOIN `alien-oarlock-428016-f3.french_cpam.dept` as d
+ON ps.dept_id = d.id
+
+WHERE ps.annee = 2022
+AND   ps.age = "tsage"
+AND   ps.sex = 9             -- tous sexes confondus
+AND   fp.id = "MFP_CAT_EXC"  -- code pour les maladies du foie et du pancréas
+AND   d.id != "999"          -- pour éviter les doublons avec l'agrégation des départements
+
+ORDER BY ps.prev DESC
+LIMIT 10 ;
+```
+
+Oups. La requête ne retourne aucun résultat ! J'ai oublié d'ajouter ce code et ce libellé de pathologie dans ma table `filtered_patho`.
+Pour réparer cela je fais un INSERT INTO dans la table `filtered_patho` avec les nouvelles valeurs de (id, libelle) que je veux ajouter :
+
+``` sql
+INSERT INTO `alien-oarlock-428016-f3.french_cpam.filtered_patho` (id, libelle)
+VALUES ("MFP_CAT_EXC", "Maladies du foie ou du pancréas (hors mucoviscidose)");
+```
+Ça marche ! 
+La table `filtered_patho` contient désormais 29 lignes, avec la rangée pour les maladies du foie et du pancréas bien insérée.
+
+
+Je reprends la requête SQL précédente pour afficher la prévalence des maladies du foie et du pancréas en 2022.
+
+Résultat:
+
+| Row | prev  | libelle                                          | id  | nom_dept                  |
+|-----|-------|--------------------------------------------------|-----|----------------------------|
+| 1   | 1.175 | Maladies du foie ou du pancréas (hors mucoviscidose) | 87  | Haute-Vienne              |
+| 2   | 1.13  | Maladies du foie ou du pancréas (hors mucoviscidose) | 23  | Creuse                    |
+| 3   | 1.129 | Maladies du foie ou du pancréas (hors mucoviscidose) | 86  | Vienne                    |
+| 4   | 1.11  | Maladies du foie ou du pancréas (hors mucoviscidose) | 55  | Meuse                     |
+| 5   | 1.022 | Maladies du foie ou du pancréas (hors mucoviscidose) | 58  | Nièvre                    |
+| 6   | 1.014 | Maladies du foie ou du pancréas (hors mucoviscidose) | 2A  | Corse-du-Sud              |
+| 7   | 1.009 | Maladies du foie ou du pancréas (hors mucoviscidose) | 11  | Aude                      |
+| 8   | 1.001 | Maladies du foie ou du pancréas (hors mucoviscidose) | 04  | Alpes-de-Haute-Provence   |
+| 9   | 1.0   | Maladies du foie ou du pancréas (hors mucoviscidose) | 52  | Haute-Marne               |
+| 10  | 0.995 | Maladies du foie ou du pancréas (hors mucoviscidose) | 15  | Cantal                    |
+
+
+### Prévalence de la maladie de Parkinson en France en 2022
+
+``` sql 
+SELECT 
+    ps.prev,
+    fp.libelle,
+    d.id,
+    d.nom_dept,
+    
+FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` as ps
+JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` as fp
+ON ps.patho_id = fp.id
+JOIN `alien-oarlock-428016-f3.french_cpam.dept` as d
+ON ps.dept_id = d.id
+
+WHERE ps.annee = 2022
+AND   ps.age = "tsage"
+AND   ps.sex = 9             -- tous sexes confondus
+AND   fp.id = "NEU_PRK_IND"  -- code pour la maladie de Parkinson
+AND   d.id != "999"          -- pour éviter les doublons avec l'agrégation des départements
+
+ORDER BY ps.prev DESC
+LIMIT 10 ;
+```
+
+Résultat:
+
+| Row | prev  | libelle                | id  | nom_dept         |
+|-----|-------|-------------------------|-----|------------------|
+| 1   | 0.72  | Maladie de Parkinson    | 36  | Indre           |
+| 2   | 0.694 | Maladie de Parkinson    | 48  | Lozère          |
+| 3   | 0.659 | Maladie de Parkinson    | 12  | Aveyron         |
+| 4   | 0.641 | Maladie de Parkinson    | 15  | Cantal          |
+| 5   | 0.634 | Maladie de Parkinson    | 19  | Corrèze         |
+| 6   | 0.633 | Maladie de Parkinson    | 23  | Creuse          |
+| 7   | 0.601 | Maladie de Parkinson    | 16  | Charente        |
+| 8   | 0.592 | Maladie de Parkinson    | 71  | Saône-et-Loire  |
+| 9   | 0.59  | Maladie de Parkinson    | 46  | Lot             |
+| 10  | 0.578 | Maladie de Parkinson    | 52  | Haute-Marne     |
+
+
+
+### Prévalence des démences (dont maladie d'Alzheimer) en France en 2022
+
+``` sql 
+SELECT 
+    ps.prev,
+    fp.libelle,
+    d.id,
+    d.nom_dept,
+    
+FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` as ps
+JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` as fp
+ON ps.patho_id = fp.id
+JOIN `alien-oarlock-428016-f3.french_cpam.dept` as d
+ON ps.dept_id = d.id
+
+WHERE ps.annee = 2022
+AND   ps.age = "tsage"
+AND   ps.sex = 9             -- tous sexes confondus
+AND   fp.id = "NEU_DEM_CAT"  -- code pour les démences (dont maladie d'Alzheimer)
+AND   d.id != "999"          -- pour éviter les doublons avec l'agrégation des départements
+
+ORDER BY ps.prev DESC
+LIMIT 10 ;
+```
+
+Résultat:
+
+| Row | prev  | libelle                     | id  | nom_dept       |
+|-----|-------|------------------------------|-----|----------------|
+| 1   | 1.601 | Démences (dont Alzheimer)    | 12  | Aveyron        |
+| 2   | 1.515 | Démences (dont Alzheimer)    | 15  | Cantal         |
+| 3   | 1.513 | Démences (dont Alzheimer)    | 58  | Nièvre         |
+| 4   | 1.504 | Démences (dont Alzheimer)    | 19  | Corrèze        |
+| 5   | 1.488 | Démences (dont Alzheimer)    | 46  | Lot            |
+| 6   | 1.47  | Démences (dont Alzheimer)    | 87  | Haute-Vienne   |
+| 7   | 1.468 | Démences (dont Alzheimer)    | 48  | Lozère         |
+| 8   | 1.395 | Démences (dont Alzheimer)    | 32  | Gers           |
+| 9   | 1.385 | Démences (dont Alzheimer)    | 57  | Moselle        |
+| 10  | 1.377 | Démences (dont Alzheimer)    | 81  | Tarn           |
+
+
+Le résultat de ces analyses sont confirmés par le propre site de la CPAM, donc tout est parfait.
+
+Il est temps de faire des visualisations dans Tableau et PowerBI. Pour cela, je transfère mes trois tables `dept`, `filtered_patho` et `patient_stat` dans Google Cloud Storage (GCS), où je peux ensuite télécharger les trois fichiers CSV correspondants sur mon PC local.
+Ensuite j'importe ces trois fichiers CSV dans Tableau et Power BI.
+
+Problème : la version français de mon Tableau Desktop ne reconnaît pas les fichiers .csv qui sont délimités par une virgule. Je dois d'abord remplacer la virgule par un point-virgule, par exemple en ligne de commande, en prenant soin de faire une sauvegarde de mes fichiers initiaux au cas où :
+
+``` shell
+cp dept.csv dept.old.csv
+cp filtered_patho.csv filtered_patho.old.csv
+cp patient_stat.csv patient_stat.old.csv
+sed -i 's/,/;/g' dept.csv filtered_patho.csv patient_stat.csv
+
+```
+
+Je vérifie avec head :
+
+``` bash
+head dept.csv
+head filtered_patho.csv
+head patient_stat.csv
+```
+
+![](images/cpam_53.png)
+
+Tout marche ! Tout devrait être bon désormais pour des visualisations dans Tableau ou Power BI.
 
 
 

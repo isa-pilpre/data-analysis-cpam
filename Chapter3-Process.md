@@ -459,7 +459,7 @@ La table `dept` va être créée en plusieurs étapes, car la colonne `nom_dept`
 --- Création de la table dept avec deux colonnes
 CREATE TABLE `alien-oarlock-428016-f3.french_cpam.dept` (
     id STRING NOT NULL,       -- 'dept' de la table cleaned_cpam devient 'id' ici
-    nom_dept                  -- 'pour le nom en toutes lettres du département
+    nom_dept  STRING         -- 'pour le nom en toutes lettres du département
 );
 
 ```
@@ -467,11 +467,12 @@ CREATE TABLE `alien-oarlock-428016-f3.french_cpam.dept` (
 - Insertion des id uniques depuis la table `cleaned_cpam` :
 
 ``` sql 
--- Insertion des identifiants de départements (sans doublons) dans la table dept
+-- Insertion des codes de départements (sans les valeurs agrégées cad sans "999") dans la table dept
 INSERT INTO `alien-oarlock-428016-f3.french_cpam.dept` (id)
 SELECT DISTINCT
     dept
-FROM `alien-oarlock-428016-f3.french_cpam.cleaned_cpam`;
+FROM `alien-oarlock-428016-f3.french_cpam.cleaned_cpam`
+WHERE dept != "999";
 
 ```
 
@@ -479,7 +480,6 @@ FROM `alien-oarlock-428016-f3.french_cpam.cleaned_cpam`;
 - Ajout des noms des départements dans la colonne `nom_dept` :
 
 ```sql
--- Mise à jour des noms de départements dans la table dept
 -- Mise à jour des noms de départements dans la table dept
 UPDATE `alien-oarlock-428016-f3.french_cpam.dept`
 SET nom_dept = CASE id
@@ -584,14 +584,13 @@ SET nom_dept = CASE id
     WHEN "973" THEN "Guyane"
     WHEN "974" THEN "La Réunion"
     WHEN "976" THEN "Mayotte"
-    WHEN "999" THEN "Tous départements"
     ELSE nom_dept
 END
 WHERE id IS NOT NULL; -- Condition à rajouter pour satisfaire la clause WHERE
 ```
 
-La table `dept` est bien créée avec 2 colonnes et 102 lignes.
-Les départements français sont au nombre de 101 (métrople et outremer), et si l'on ajoute la ligne pour l'aggrégation des départements (code 999), cela fait bien 101 + 1 = 102. Donc tout est OK. 
+La table `dept` est bien créée avec 2 colonnes et 101 lignes.
+Les départements français sont au nombre de 101 (avec la métrople et l'outremer), donc tout est OK. 
 
 
 ![](images/cpam_30.png)
@@ -599,8 +598,7 @@ Les départements français sont au nombre de 101 (métrople et outremer), et si
 ![](images/cpam_31.png)
 
 
-Pour une vérification supplémentaire, j'ai aussi fait un ORDER BY id pour classer les départements dans l'odre croissant, et j'ai bien trouvé dans la table les deux départements de Corse, les 5 départements d’Outre-mer et le département fictif ‘999’ agrégeant tous les départements. 
-L'intégrité des données semble assurée.
+Pour une vérification supplémentaire, j'ai aussi fait un ORDER BY id pour classer les départements dans l'odre croissant, et j'ai bien trouvé dans la table les deux départements de Corse et les 5 départements d’Outre-mer. L'intégrité des données semble respectée.
 
 ![](images/cpam_36.png)
 
@@ -616,12 +614,12 @@ Ici je passe par deux étapes pour m'assurer que je fais bien la jointure avec l
 ``` sql
 -- Création de la table patient_stat
 
-CREATE OR REPLACE TABLE alien-oarlock-428016-f3.french_cpam.patient_stat (
+CREATE OR REPLACE TABLE `alien-oarlock-428016-f3.french_cpam.patient_stat` (
  annee INT64,
  dept_id STRING,  -- Foreign Key vers la table dept
  patho_id STRING,  -- Foreign Key vers la table patho
- age STRING,  -- classe d'âge
- sex INT64,  -- sexe (1 pour homme, 2 pour femme, 9 pour tous)
+ age STRING,      -- classe d'âge
+ sex INT64,       -- sexe (1 pour homme, 2 pour femme, 9 pour tous)
  Ntop INT64,
  Npop INT64,
  prev FLOAT64
@@ -644,14 +642,14 @@ FROM `alien-oarlock-428016-f3.french_cpam.cleaned_cpam` AS cleaned
 JOIN `alien-oarlock-428016-f3.french_cpam.patho` AS patho
     ON cleaned.top = patho.id  -- Jointure sur la clé top pour assurer la correspondance avec patho_id
 JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS dept
-    ON cleaned.dept = dept.id;  -- Jointure sur le code département pour assurer la correspondance avec dept_id
+    ON cleaned.dept = dept.id  -- Jointure sur le code département pour assurer la correspondance avec dept_id
+
+WHERE cleaned.dept != "999"  ;  -- pour ne prendre aucune ligne contenant des valeurs agrégées de départements
 
 ```
 
 
-La table `patient_stat` est bien créée avec 8 colonnes et 4.478.208 lignes. Elle contient des valeurs Null dans les colonnes `Ntop` et `prev`, comme attendu.
-
-Le nombre de rangées correspond à celui de la table `cleaned_cpam`, donc tout semble correct.
+La table `patient_stat` est bien créée avec 8 colonnes et  3.800.832 lignes. Elle contient des valeurs Null dans les colonnes `Ntop` et `prev`, comme attendu.
 
 ![](images/cpam_32.png)
 
