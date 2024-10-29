@@ -578,88 +578,28 @@ head patient_stat.csv
 
 Tout marche ! Tout devrait être bon désormais pour des visualisations dans Tableau ou Power BI.
 
+## 3) Conseils pour une visualisation dans Tableau 
 
+Suite à des écueils que j'ai rencontrés et résolus dans Tableau, voici des rappels essentiels pour réussir des visualisations :
 
+- Ne pas conserver des valeurs agrégées dans les codes de régions ou départements
 
+Tableau ne comprendra pas la valeur `999` dans les codes INSEE des départements, à côté de `64`, `40`, etc. et affichera une erreur.
 
+- Ajouter un champ avec le nom des départements en toutes lettres
 
+Pour faire comprendre à Tableau que les codes correspondent aux départements français, je conseille d'ajouter une colonne contenant le nom des départements en toutes lettres. Par exemple, `Pyrénées-Atlantiques`, `Landes`, etc.
 
+- Définir le type des codes de départements en `Rôle géographique` / `Comté`
 
+Ça permet d'afficher la carte de France dès qu'on ajoute ces codes de départements dans le Canevas.
 
+- Désactiver `Agréger les données` dans le menu `Analyse`
 
+Ça permet d'éviter que les prévalences ou autres paramètres soient automatiquement agrégés et additionnés quand on les place dans le Canevas.
 
+- Effectuer des jointures de tables (physiques) plutôt que des relations de tables (logiques)
 
+Ça permet d'éviter des problèmes bizarres tels que l'option `Agréger les données` en grisé et automatiquement activée.
 
-
-
-
-
-
-
-
-#### À propos du nombre de patients (`Ntop`)
-
-Les résultats montrent une moyenne `Ntop` de 5 527 bénéficiaires de soins de santé par combinaison unique de pathologie, groupe d'âge, sexe, région et année. Cela signifie que, pour toutes les combinaisons de ces facteurs, il y a en moyenne 5 527 personnes recevant des soins pour une condition spécifique dans une population et un lieu donnés.
-
-La valeur maximale de `Ntop` est de 68 729 230, ce qui représente le nombre total de bénéficiaires de soins de santé en France pour l'année 2022. Cela correspond parfaitement au site de la CPAM, où il est indiqué « 68,7 millions de bénéficiaires ont reçu au moins un service de santé pris en charge par l'assurance maladie ».
-
-Le nombre minimum de `Ntop` (10 patients) reflète des cas où seulement un petit nombre d'individus, au sein d'une combinaison spécifique de facteurs (comme une pathologie rare dans un certain groupe d'âge et une région donnée), ont reçu un traitement.
-
-#### À propos de la prévalence (`prev`)
-
-La prévalence moyenne est de 6,21, avec des extrêmes allant de 0 à 100, qu'on avait déjà aperçu dans le premier extrait de données. Ces résultats extrêmes sont à creuser pour bien les comprendre. Aussi, je voudrais m'assurer que la prévalence (`prev`) indiquée dans ce jeu de données est bien le rapport entre Ntop par Npop. Je ferai cette vérification très prochainement. ISA work needed.
-
-**Notons deux choses importantes** :
-
-* On réalise ici que la **prévalence est affichée en pourcentage par la CPAM**, étant donné que la valeur maximale de `prev` est de 100. Donc la prévalence maximale est de 100 %.
-* Si le minimum de `Ntop` n'est pas zéro mais bien 10, le minimum de la prévalence ne devrait pas être zéro (car Prévalence \= Ntop / Npop). Cependant, j'ai remarqué que de nombreuses entrées de `Ntop` étaient nulles, ce qui peut expliquer le résultat de zéro pour la prévalence (puisque `Ntop` est absent), même si `Ntop` ne contient pas de zéro explicite. La fonction `MIN()` ignore souvent les valeurs nulles, donc si `Ntop` contient des valeurs nulles ou non renseignées, la fonction peut afficher un minimum de 10 (la première valeur numérique non nulle). Il faudra donc vérifier si `Ntop` contient des valeurs nulles pour confirmer cette hypothèse.
-
-
-## 2) Prévalence, sa signification précise dans ce jeu de données
-
-Afin de m'assurer de bien comprendre ce que signifie exactement la prévalence (prev) dans ce jeu de données, car il s'agit de la variable principale de mon analyse, je lance la requête SQL suivante dans BigQuery.
-
-J'exclus toutes les valeurs agrégées, à savoir "tous sexes" (`sexe != 9`), "tous départements" (`dept != '999'`), "toutes régions" (`region != 99`), et "tous âges" (`cla_age_5 != 'tsage'`).
-Je calcule la prévalence à partir des colonnes `Ntop` et `Npop` (Ntop/Npop), en l'arrondissant à trois décimales, comme la variable prev fournie dans le jeu de données.
-Puis je cherche les entrées où la différence entre la prévalence fournie et celle calculée dépasse 0,001 :
-
-```sql
-SELECT
-    patho_niv1,
-    sexe,
-    cla_age_5,
-    Ntop,
-    Npop,
-    prev,
-    ROUND((Ntop / Npop * 100), 3) AS calculated_prev,
-    prev - ROUND((Ntop / Npop * 100), 3) AS difference
-FROM
-    alien-oarlock-428016-f3.french_cpam.cpam_effectifs_july_2024
-WHERE
-    Npop IS NOT NULL
-    AND Ntop IS NOT NULL
-    AND Ntop >= 100
-    AND Npop > 0
-    AND ABS(prev - ROUND((Ntop / Npop * 100), 3)) > 0.001
-    AND sexe != 9
-    AND dept != '999'
-    AND region != 99
-    AND cla_age_5 != 'tsage'
-ORDER BY
-    difference DESC
-LIMIT 30
-```
-
-### Résultats
-
-Les plus grandes différences entre `prev` et `calculated_prev` concernent principalement les personnes âgées, en particulier celles de 95 ans et plus, ainsi que les 85-89 ans. Ces écarts apparaissent lorsque les valeurs de `Ntop` et `Npop` sont petites et semblent arrondies de manière inhabituelle (120, 190, 110, 200, etc.). Cela pourrait indiquer des ajustements ou un lissage dans le processus de calcul des prévalences pour ces tranches d'âge, où les effectifs sont plus faibles et plus susceptibles de variations.
-
-![ ](images/cpam_23.png)
-
-![ ](images/cpam_24.png)
-
-Ces résultats ne m'inquiètent pas pour mon projet d'analyse. Cependant, dans un contexte professionnel, si je travaillais pour une entreprise propriétaire de ce jeu de données, j'aurais clarifié ce mystère en prenant contact avec la partie prenante responsable de la collecte et de la création des données. J'aurais posé toutes les questions requises jusqu'à m'assurer d'avoir parfaitement compris ce que représentent précisément les colonnes `prev`, `Ntop`, `Npop`, ainsi que les autres champs.
-
-Dans le cadre de ce projet personnel d'analyse exploratoire, où j'ai téléchargé les données en open data sur le site de la CPAM, je vais simplement poursuivre mon analyse en utilisant la variable `prev` telle qu'elle est fournie dans le jeu de données.
-
-
+- Pour les pays comme la France possédant des territoires outre-mer, créer un feuillet (sheet) pour chaque département d'outre-mer, puis assembler tous les départements DOM-TOM avec la métropole dans un tableau de bord (dashboard) final. 
