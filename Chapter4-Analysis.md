@@ -553,8 +553,8 @@ Résultat:
 
 Le résultat de ces analyses sont confirmés par le propre site de la CPAM, donc tout est parfait.
 
-Il est temps de faire des visualisations dans Tableau et PowerBI. Pour cela, je transfère mes trois tables `dept`, `filtered_patho` et `patient_stat` dans Google Cloud Storage (GCS), où je peux ensuite télécharger les trois fichiers CSV correspondants sur mon PC local.
-Ensuite j'importe ces trois fichiers CSV dans Tableau et Power BI.
+Il est temps de faire des visualisations dans Tableau. Pour cela, je transfère mes trois tables `dept`, `filtered_patho` et `patient_stat` dans Google Cloud Storage (GCS), où je peux ensuite télécharger les trois fichiers CSV correspondants sur mon PC local.
+Ensuite j'importe ces trois fichiers CSV dans Tableau.
 
 Problème : la version français de mon Tableau Desktop ne reconnaît pas les fichiers .csv qui sont délimités par une virgule. Je dois d'abord remplacer la virgule par un point-virgule, par exemple en ligne de commande, en prenant soin de faire une sauvegarde de mes fichiers initiaux au cas où :
 
@@ -576,9 +576,10 @@ head patient_stat.csv
 
 ![](images/cpam_53.png)
 
-Tout marche ! Tout devrait être bon désormais pour des visualisations dans Tableau ou Power BI.
+Tout marche ! Tout devrait être bon désormais pour des visualisations dans Tableau.
 
-## 3) Conseils pour une visualisation dans Tableau 
+
+## 3) Conseils pour réussir ses visualisations dans Tableau 
 
 Suite à des écueils que j'ai rencontrés et résolus dans Tableau, voici des rappels essentiels pour réussir des visualisations :
 
@@ -603,3 +604,103 @@ Pour faire comprendre à Tableau que les codes correspondent aux départements f
 Ça permet d'éviter des problèmes bizarres tels que l'option `Agréger les données` en grisé et automatiquement activée.
 
 - Pour les pays comme la France possédant des territoires outre-mer, créer un feuillet (sheet) pour chaque département d'outre-mer, puis assembler tous les départements DOM-TOM avec la métropole dans un tableau de bord (dashboard) final. 
+
+- Utiliser des Champs personnalisés dès qu'une variable ne correspond pas complètement aux attentes, ça simplifie vraiment la vie.
+
+Exemples :
+
+-- Champ personnalisé pour rendre la variable `Annee` qui était de type numérique en variable `Annee Date` de type date
+
+``` shell 
+Nom du champ personnalisé : Annee Date
+MAKEDATE([Annee], 1, 1)
+```
+
+-- Champ personnalisé pour faire un histogramme avec les valeurs des effectifs féminins sur la gauche (par rapport à ceux des hommes à droite)
+
+D'abord caster la variable `sex` en entier
+
+``` shell
+Nom du champ personnalisé : "Sex Num"
+INT([sex]=)
+```
+
+Puis changer `Ntop` en `Ntop inversé`
+
+``` shell
+Nom du champ personnalisé : "Ntop inversé"
+IF ([Sex Num] = 2) THEN -[Ntop]
+ELSEIF ([Sex Num] = 1) THEN [Ntop]
+END
+```
+
+## 4) Scripts Python utilisés dans un notebook BigQuery
+
+Pour approfondir l'analyse exploratoire des données, j'ai tracé la courbe des prévalences pour les "Top 4" et "Bottom 4" départements de 2015 à 2022, pour les quatre cancers les plus répandus en France, en les comparant à la médiane nationale.
+
+Échantillon de code Python :
+
+``` python
+from google.cloud import bigquery
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Initialiser le client BigQuery
+client = bigquery.Client()
+
+# Définir les départements Top 4 et Bottom 4 en 2022 pour la pathologie en question
+departements_top4 = ['Martinique', 'Guadeloupe', 'Creuse', 'Cantal']
+departements_bottom4 = ["Mayotte", "Guyane", "La Réunion", "Seine-Saint-Denis"]
+departements_cibles = departements_top4 + departements_bottom4
+
+# Définir les paramètres
+cancer_id = "CAN_PRO_CAT"  # Catégorie de cancer spécifique
+annees = list(range(2015, 2023))  # 2015 à 2022
+sexe = 1  # masculin
+age = "tsage"  # Tranche d'âge spécifique
+
+# Requête SQL pour les départements Top 4 et Bottom 4
+sql_cibles = f"""
+SELECT 
+    ps.prev,
+    fp.libelle AS pathologie,
+    d.id AS dept_id,
+    d.nom_dept,
+    ps.annee,
+    ps.sex,
+    ps.age
+FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
+JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
+    ON ps.patho_id = fp.id
+JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
+    ON ps.dept_id = d.id
+WHERE ps.annee BETWEEN @start_year AND @end_year
+    AND ps.age = @age
+    AND ps.sex = @sexe
+    AND fp.id = @cancer_id
+    AND d.nom_dept IN UNNEST(@departements_cibles)
+    AND d.id != "999"
+ORDER BY ps.annee, d.nom_dept;
+"""
+
+# Préparer les paramètres de la requête
+job_config_cibles = bigquery.QueryJobConfig(
+    query_parameters=[
+        bigquery.ScalarQueryParameter("start_year", "INT64", 2015),
+        bigquery.ScalarQueryParameter("end_year", "INT64", 2022),
+        bigquery.ScalarQueryParameter("age", "STRING", age),
+        bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
+        bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
+        bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
+    ]
+)
+
+# Exécuter la requête et récupérer les données dans un dataframe
+df_cibles = client.query(sql_cibles, job_config=job_config_cibles).to_dataframe()
+
+```
+
+Graphe :
+
+![Evolution du cancer de la prostate de 2015 à 2022](images/Evolution%20Prevalence%20K%20Prostate%202015%202022.png)
