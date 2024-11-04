@@ -8,16 +8,9 @@ Le système d’assurance maladie en France (CPAM) met à disposition des jeux d
 
 L'objectif est de mieux comprendre les disparités des pathologies par territoire et par catégorie démographique de 2015 à 2022.
 
-## Données
-
-Les données analysées incluent :
-- **Pathologies étudiées** : cancer bronchopulmonaire, colorectal, du sein et de la prostate ; ainsi que d’autres pathologies d’intérêt (diabète, sclérose en plaques, etc.).
-- **Variables démographiques et territoriales** : sexe, classe d'âge, département.
-- **Années de suivi** : 2015 à 2022.
-
 ## Méthodologie
 
-1. **Collecte et préparation des données** :
+1. **Collecte, nettoyage et préparation des données** :
    - Import des données brutes depuis [data.ameli.fr](https://data.ameli.fr).
    - Nettoyage, filtrage pour éliminer les valeurs agrégées et restructuration des données en trois tables.
 
@@ -26,8 +19,7 @@ Les données analysées incluent :
    - Identification des départements présentant des anomalies ou des taux élevés.
 
 3. **Visualisation et interprétation** :
-   - Création de graphiques interactifs dans Tableau pour observer les tendances.
-   - Comparaison des prévalences dans les différents départements et identification des zones nécessitant des actions ciblées.
+   [Google Slides](https://docs.google.com/presentation/d/e/2PACX-1vRVgOzcnTvWAV5TRWohsDs9n_8aqBdEHkEJT7uTlSakcAmZ84gct5ACZ4zKF9UBassS-up8g5HpO3vZ/pub?start=true&loop=true&delayms=3000)
 
 
 ## Accès
