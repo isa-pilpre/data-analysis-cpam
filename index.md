@@ -6,10 +6,10 @@ Plus précisément, il s'agit d'explorer la prévalence des quatre cancers les p
 
 ## Documentation du processus complet :
 
-* [Chapter 1: Ask](Chapter1-Ask)
-* [Chapter 2: Prepare](Chapter2-Prepare)
-* [Chapter 3: Process](Chapter3-Process)
-* [Chapter 4: Analysis](Chapter4-Analysis)
+* [Chapter 1: Ask](Chapter1-Ask.md)
+* [Chapter 2: Prepare](Chapter2-Prepare.md)
+* [Chapter 3: Process](Chapter3-Process.md)
+* [Chapter 4: Analysis](Chapter4-Analysis.md)
 
 ## Rapport final avec visualisations sur Google Slides :
 
