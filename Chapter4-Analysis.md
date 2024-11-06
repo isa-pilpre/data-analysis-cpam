@@ -706,7 +706,7 @@ df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, 
 
 Graphe :
 
-![Evolution du cancer du poumon de 2015 à 2022](images/Evolution%20Prevalence%20K%20Poumon%202015%202022.png)
+![Evolution du cancer du poumon de 2015 à 2022](images/evolution_cancer_poumon_2015_2022.png)
 
 
 ### Cancer colorectal
@@ -779,7 +779,7 @@ df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, 
 
 Graphe :
 
-![Evolution du cancer colorectal de 2015 à 2022](images/Evolution%20Prevalence%20K%20Colorectal%202015%202022.png)
+![Evolution du cancer colorectal de 2015 à 2022](images/evolution_cancer_colorectal_2015_2022.png)
 
 
 
@@ -852,7 +852,7 @@ df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, 
 
 Graphe :
 
-![Evolution du cancer du sein de 2015 à 2022](images/Evolution%20Prevalence%20K%20Sein%202015%202022.png)
+![Evolution du cancer du sein de 2015 à 2022](images/evolution_cancer_sein_2015_2022.png)
 
 
 ### Cancer de la prostate 
@@ -923,4 +923,4 @@ df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, 
 
 Graphe :
 
-![Evolution du cancer de la prostate de 2015 à 2022](images/Evolution%20Prevalence%20K%20Prostate%202015%202022.png)
+![Evolution du cancer de la prostate de 2015 à 2022](images/evolution_cancer_prostate_2015_2022.png)
