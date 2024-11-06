@@ -648,58 +648,59 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Initialiser le client BigQuery
+# Cas du cancer du poumon
 client = bigquery.Client()
-
-# Définir les départements Top 4 et Bottom 4 en 2022 pour la pathologie en question
-departements_top4 = ['Corse-du-Sud', 'Haute-Corse', 'Ardennes', 'Nièvre']
-departements_bottom4 = ["Mayotte", "Guyane", "Guadeloupe", "Martinique"]
+departements_top4 = ['Corse-du-Sud', 'Haute-Corse', 'Ardennes', 'Nièvre'] # Dépts les plus impactés
+departements_bottom4 = ["Mayotte", "Guyane", "Guadeloupe", "Martinique"]  # Dépts les moins impactés
 departements_cibles = departements_top4 + departements_bottom4
+cancer_id = "CAN_BPU_CAT"   # Identifiant du cancer du poumon
+age = "tsage"               # tous âges
+sexe = 9                    # tous sexes
+start_year = 2015
+end_year = 2022
 
-# Définir les paramètres
-cancer_id = "CAN_BPU_CAT"  # Catégorie de cancer spécifique
-annees = list(range(2015, 2023))  # 2015 à 2022
-sexe = 9  # tous sexes
-age = "tsage"  # Tranche d'âge spécifique
+def get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age="tsage", sexe=9):
+    # Requête SQL sans f-strings, paramétrée uniquement avec `query_parameters`
+    sql_query = """
+    SELECT 
+        ps.prev,
+        fp.libelle AS pathologie,
+        d.id AS dept_id,
+        d.nom_dept,
+        ps.annee,
+        ps.sex,
+        ps.age
+    FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
+    JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
+        ON ps.patho_id = fp.id
+    JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
+        ON ps.dept_id = d.id
+    WHERE ps.annee BETWEEN @start_year AND @end_year
+        AND ps.age = @age
+        AND ps.sex = @sexe
+        AND fp.id = @cancer_id
+        AND d.nom_dept IN UNNEST(@departements_cibles)
+        AND d.id != "999"
+    ORDER BY ps.annee, d.nom_dept;
+    """
 
-# Requête SQL pour les départements Top 4 et Bottom 4
-sql_cibles = f"""
-SELECT 
-    ps.prev,
-    fp.libelle AS pathologie,
-    d.id AS dept_id,
-    d.nom_dept,
-    ps.annee,
-    ps.sex,
-    ps.age
-FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
-JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
-    ON ps.patho_id = fp.id
-JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
-    ON ps.dept_id = d.id
-WHERE ps.annee BETWEEN @start_year AND @end_year
-    AND ps.age = @age
-    AND ps.sex = @sexe
-    AND fp.id = @cancer_id
-    AND d.nom_dept IN UNNEST(@departements_cibles)
-    AND d.id != "999"
-ORDER BY ps.annee, d.nom_dept;
-"""
+    # Configuration de la requête avec les paramètres sécurisés
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("start_year", "INT64", start_year),
+            bigquery.ScalarQueryParameter("end_year", "INT64", end_year),
+            bigquery.ScalarQueryParameter("age", "STRING", age),
+            bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
+            bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
+            bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
+        ]
+    )
 
-# Préparer les paramètres de la requête
-job_config_cibles = bigquery.QueryJobConfig(
-    query_parameters=[
-        bigquery.ScalarQueryParameter("start_year", "INT64", 2015),
-        bigquery.ScalarQueryParameter("end_year", "INT64", 2022),
-        bigquery.ScalarQueryParameter("age", "STRING", age),
-        bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
-        bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
-        bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
-    ]
-)
+    # Exécution de la requête et récupération des données
+    return client.query(sql_query, job_config=job_config).to_dataframe()
 
-# Exécuter la requête et récupérer les données dans un dataframe
-df_cibles = client.query(sql_cibles, job_config=job_config_cibles).to_dataframe()
+# Exécution de la fonction pour le cancer spécifique
+df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age, sexe)
 
 ```
 
@@ -713,63 +714,66 @@ Graphe :
 Échantillon de code en Python
 
 ``` python
+
 from google.cloud import bigquery
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Initialiser le client BigQuery
+# Cas du cancer colorectal
 client = bigquery.Client()
-
-# Définir les départements Top 4 et Bottom 4 en 2022 pour la pathologie en question
-departements_top4 = ['Tarn', 'Creuse', 'Finistère', 'Lot']
-departements_bottom4 = ["Mayotte", "Guyane", "La Réunion", "Seine-Saint-Denis"]
+departements_top4 = ['Tarn', 'Creuse', 'Finistère', 'Lot'] # dépts les plus impactés
+departements_bottom4 = ["Mayotte", "Guyane", "La Réunion", "Seine-Saint-Denis"]  # dépts les moins impactés
 departements_cibles = departements_top4 + departements_bottom4
+cancer_id = "CAN_CRE_CAT"  # code cancer
+age = "tsage"              # tous ages
+sexe = 9                    # tous sexes
+start_year = 2015
+end_year = 2022
 
-# Définir les paramètres
-cancer_id = "CAN_CRE_CAT"  # Catégorie de cancer spécifique
-annees = list(range(2015, 2023))  # 2015 à 2022
-sexe = 9  # tous sexes
-age = "tsage"  # Tranche d'âge spécifique
+def get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age="tsage", sexe=9):
+    # Requête SQL sans f-strings, paramétrée uniquement avec `query_parameters`
+    sql_query = """
+    SELECT 
+        ps.prev,
+        fp.libelle AS pathologie,
+        d.id AS dept_id,
+        d.nom_dept,
+        ps.annee,
+        ps.sex,
+        ps.age
+    FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
+    JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
+        ON ps.patho_id = fp.id
+    JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
+        ON ps.dept_id = d.id
+    WHERE ps.annee BETWEEN @start_year AND @end_year
+        AND ps.age = @age
+        AND ps.sex = @sexe
+        AND fp.id = @cancer_id
+        AND d.nom_dept IN UNNEST(@departements_cibles)
+        AND d.id != "999"
+    ORDER BY ps.annee, d.nom_dept;
+    """
 
-# Requête SQL pour les départements Top 4 et Bottom 4
-sql_cibles = f"""
-SELECT 
-    ps.prev,
-    fp.libelle AS pathologie,
-    d.id AS dept_id,
-    d.nom_dept,
-    ps.annee,
-    ps.sex,
-    ps.age
-FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
-JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
-    ON ps.patho_id = fp.id
-JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
-    ON ps.dept_id = d.id
-WHERE ps.annee BETWEEN @start_year AND @end_year
-    AND ps.age = @age
-    AND ps.sex = @sexe
-    AND fp.id = @cancer_id
-    AND d.nom_dept IN UNNEST(@departements_cibles)
-    AND d.id != "999"
-ORDER BY ps.annee, d.nom_dept;
-"""
+    # Configuration de la requête avec les paramètres sécurisés
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("start_year", "INT64", start_year),
+            bigquery.ScalarQueryParameter("end_year", "INT64", end_year),
+            bigquery.ScalarQueryParameter("age", "STRING", age),
+            bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
+            bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
+            bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
+        ]
+    )
 
-# Préparer les paramètres de la requête
-job_config_cibles = bigquery.QueryJobConfig(
-    query_parameters=[
-        bigquery.ScalarQueryParameter("start_year", "INT64", 2015),
-        bigquery.ScalarQueryParameter("end_year", "INT64", 2022),
-        bigquery.ScalarQueryParameter("age", "STRING", age),
-        bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
-        bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
-        bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
-    ]
-)
+    # Exécution de la requête et récupération des données
+    return client.query(sql_query, job_config=job_config).to_dataframe()
 
-# Exécuter la requête et récupérer les données dans un dataframe
-df_cibles = client.query(sql_cibles, job_config=job_config_cibles).to_dataframe()
+# Exécution de la fonction piur obtenir les données de cancer spécifique
+df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age, sexe)
+
 
 ```
 
@@ -781,7 +785,7 @@ Graphe :
 
 ### Cancer du sein
 
-Échantillon de code Python :
+Le code Python pour le cancer du sein est similaire :
 
 ``` python
 from google.cloud import bigquery
@@ -789,58 +793,60 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Initialiser le client BigQuery
+# Cas du cancer du sein
 client = bigquery.Client()
-
-# Définir les départements Top 4 et Bottom 4 en 2022 pour la pathologie en question
-departements_top4 = ['Nièvre', 'Allier', 'Moselle', 'Corse-du-Sud']
-departements_bottom4 = ["Mayotte", "Guyane", "La Réunion", "Martinique"]
+departements_top4 = ['Nièvre', 'Allier', 'Moselle', 'Corse-du-Sud'] # dépts les plus impactés
+departements_bottom4 = ["Mayotte", "Guyane", "La Réunion", "Martinique"]  # dépts les moins impactés
 departements_cibles = departements_top4 + departements_bottom4
+cancer_id = "CAN_SEI_CAT"  # code cancer
+age = "tsage"              # tous ages
+sexe = 2                    # exclusivement féminin
+start_year = 2015
+end_year = 2022
 
-# Définir les paramètres
-cancer_id = "CAN_SEI_CAT"  # Catégorie de cancer spécifique
-annees = list(range(2015, 2023))  # 2015 à 2022
-sexe = 2  # féminin
-age = "tsage"  # Tranche d'âge spécifique
 
-# Requête SQL pour les départements Top 4 et Bottom 4
-sql_cibles = f"""
-SELECT 
-    ps.prev,
-    fp.libelle AS pathologie,
-    d.id AS dept_id,
-    d.nom_dept,
-    ps.annee,
-    ps.sex,
-    ps.age
-FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
-JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
-    ON ps.patho_id = fp.id
-JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
-    ON ps.dept_id = d.id
-WHERE ps.annee BETWEEN @start_year AND @end_year
-    AND ps.age = @age
-    AND ps.sex = @sexe
-    AND fp.id = @cancer_id
-    AND d.nom_dept IN UNNEST(@departements_cibles)
-    AND d.id != "999"
-ORDER BY ps.annee, d.nom_dept;
-"""
+def get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age="tsage", sexe=9):
+    # Requête SQL sans f-strings, paramétrée uniquement avec `query_parameters`
+    sql_query = """
+    SELECT 
+        ps.prev,
+        fp.libelle AS pathologie,
+        d.id AS dept_id,
+        d.nom_dept,
+        ps.annee,
+        ps.sex,
+        ps.age
+    FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
+    JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
+        ON ps.patho_id = fp.id
+    JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
+        ON ps.dept_id = d.id
+    WHERE ps.annee BETWEEN @start_year AND @end_year
+        AND ps.age = @age
+        AND ps.sex = @sexe
+        AND fp.id = @cancer_id
+        AND d.nom_dept IN UNNEST(@departements_cibles)
+        AND d.id != "999"
+    ORDER BY ps.annee, d.nom_dept;
+    """
 
-# Préparer les paramètres de la requête
-job_config_cibles = bigquery.QueryJobConfig(
-    query_parameters=[
-        bigquery.ScalarQueryParameter("start_year", "INT64", 2015),
-        bigquery.ScalarQueryParameter("end_year", "INT64", 2022),
-        bigquery.ScalarQueryParameter("age", "STRING", age),
-        bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
-        bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
-        bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
-    ]
-)
+    # Configuration de la requête avec les paramètres sécurisés
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("start_year", "INT64", start_year),
+            bigquery.ScalarQueryParameter("end_year", "INT64", end_year),
+            bigquery.ScalarQueryParameter("age", "STRING", age),
+            bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
+            bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
+            bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
+        ]
+    )
 
-# Exécuter la requête et récupérer les données dans un dataframe
-df_cibles = client.query(sql_cibles, job_config=job_config_cibles).to_dataframe()
+    # Exécution de la requête et récupération des données
+    return client.query(sql_query, job_config=job_config).to_dataframe()
+
+# Exécution de la fonction piur obtenir les données de cancer spécifique
+df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age, sexe)
 
 ```
 
@@ -851,7 +857,7 @@ Graphe :
 
 ### Cancer de la prostate 
 
-Échantillon de code Python :
+Enfin, voici l'échantillon de code Python pour le cancer de la prostate, qui suit la même logique :
 
 ``` python
 from google.cloud import bigquery
@@ -859,58 +865,59 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Initialiser le client BigQuery
+# Cas du cancer de la prostate
 client = bigquery.Client()
-
-# Définir les départements Top 4 et Bottom 4 en 2022 pour la pathologie en question
-departements_top4 = ['Martinique', 'Guadeloupe', 'Creuse', 'Cantal']
-departements_bottom4 = ["Mayotte", "Guyane", "La Réunion", "Seine-Saint-Denis"]
+departements_top4 = ['Martinique', 'Guadeloupe', 'Creuse', 'Cantal'] # dépts les plus impactés
+departements_bottom4 = ["Mayotte", "Guyane", "La Réunion", "Seine-Saint-Denis"]  # dépts les moins impactés
 departements_cibles = departements_top4 + departements_bottom4
+cancer_id = "CAN_PRO_CAT"  # code cancer
+age = "tsage"              # tous ages
+sexe = 1                    # exclusivement masculin
+start_year = 2015
+end_year = 2022
 
-# Définir les paramètres
-cancer_id = "CAN_PRO_CAT"  # Catégorie de cancer spécifique
-annees = list(range(2015, 2023))  # 2015 à 2022
-sexe = 1  # masculin
-age = "tsage"  # Tranche d'âge spécifique
+def get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age="tsage", sexe=9):
+    # Requête SQL sans f-strings, paramétrée uniquement avec `query_parameters`
+    sql_query = """
+    SELECT 
+        ps.prev,
+        fp.libelle AS pathologie,
+        d.id AS dept_id,
+        d.nom_dept,
+        ps.annee,
+        ps.sex,
+        ps.age
+    FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
+    JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
+        ON ps.patho_id = fp.id
+    JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
+        ON ps.dept_id = d.id
+    WHERE ps.annee BETWEEN @start_year AND @end_year
+        AND ps.age = @age
+        AND ps.sex = @sexe
+        AND fp.id = @cancer_id
+        AND d.nom_dept IN UNNEST(@departements_cibles)
+        AND d.id != "999"
+    ORDER BY ps.annee, d.nom_dept;
+    """
 
-# Requête SQL pour les départements Top 4 et Bottom 4
-sql_cibles = f"""
-SELECT 
-    ps.prev,
-    fp.libelle AS pathologie,
-    d.id AS dept_id,
-    d.nom_dept,
-    ps.annee,
-    ps.sex,
-    ps.age
-FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
-JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
-    ON ps.patho_id = fp.id
-JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
-    ON ps.dept_id = d.id
-WHERE ps.annee BETWEEN @start_year AND @end_year
-    AND ps.age = @age
-    AND ps.sex = @sexe
-    AND fp.id = @cancer_id
-    AND d.nom_dept IN UNNEST(@departements_cibles)
-    AND d.id != "999"
-ORDER BY ps.annee, d.nom_dept;
-"""
+    # Configuration de la requête avec les paramètres sécurisés
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("start_year", "INT64", start_year),
+            bigquery.ScalarQueryParameter("end_year", "INT64", end_year),
+            bigquery.ScalarQueryParameter("age", "STRING", age),
+            bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
+            bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
+            bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
+        ]
+    )
 
-# Préparer les paramètres de la requête
-job_config_cibles = bigquery.QueryJobConfig(
-    query_parameters=[
-        bigquery.ScalarQueryParameter("start_year", "INT64", 2015),
-        bigquery.ScalarQueryParameter("end_year", "INT64", 2022),
-        bigquery.ScalarQueryParameter("age", "STRING", age),
-        bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
-        bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
-        bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
-    ]
-)
+    # Exécution de la requête et récupération des données
+    return client.query(sql_query, job_config=job_config).to_dataframe()
 
-# Exécuter la requête et récupérer les données dans un dataframe
-df_cibles = client.query(sql_cibles, job_config=job_config_cibles).to_dataframe()
+# Exécution de la fonction piur obtenir les données de cancer spécifique
+df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age, sexe)
 
 ```
 
