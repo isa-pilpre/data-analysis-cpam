@@ -3,58 +3,61 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Initialiser le client BigQuery
+# But: tracer l'évolution de la prévalence d'un cancer spécifique de 2015 à 2022
+
+# Cas du cancer de la prostate
 client = bigquery.Client()
+departements_top5 = ['Martinique', 'Guadeloupe', 'Creuse', 'Cantal', 'Haute-Vienne'] # Dépts les plus impactés
+departements_bottom5 = ["Mayotte", "Guyane", "La Réunion", "Seine-Saint-Denis", "Val d'Oise"]  # Dépts les moins impactés
+departements_cibles = departements_top5 + departements_bottom5
+cancer_id = "CAN_PRO_CAT"   # Identifiant du cancer de la prostate
+age = "tsage"               # tous âges
+sexe = 1                    # exclusivement masculin
+start_year = 2015
+end_year = 2022
 
-# Définir les départements Top 4 et Bottom 4 en 2022 pour la pathologie en question
-departements_top4 = ['Martinique', 'Guadeloupe', 'Creuse', 'Cantal']
-departements_bottom4 = ["Mayotte", "Guyane", "La Réunion", "Seine-Saint-Denis"]
-departements_cibles = departements_top4 + departements_bottom4
+def get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age="tsage", sexe=9):
+    # Requête SQL sans f-strings, paramétrée uniquement avec `query_parameters`
+    sql_query = """
+    SELECT 
+        ps.prev,
+        fp.libelle AS pathologie,
+        d.id AS dept_id,
+        d.nom_dept,
+        ps.annee,
+        ps.sex,
+        ps.age
+    FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
+    JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
+        ON ps.patho_id = fp.id
+    JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
+        ON ps.dept_id = d.id
+    WHERE ps.annee BETWEEN @start_year AND @end_year
+        AND ps.age = @age
+        AND ps.sex = @sexe
+        AND fp.id = @cancer_id
+        AND d.nom_dept IN UNNEST(@departements_cibles)
+        AND d.id != "999"
+    ORDER BY ps.annee, d.nom_dept;
+    """
 
-# Définir les paramètres
-cancer_id = "CAN_PRO_CAT"  # Catégorie de cancer spécifique
-annees = list(range(2015, 2023))  # 2015 à 2022
-sexe = 1  # masculin
-age = "tsage"  # Tranche d'âge spécifique
+    # Configuration de la requête avec les paramètres sécurisés
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("start_year", "INT64", start_year),
+            bigquery.ScalarQueryParameter("end_year", "INT64", end_year),
+            bigquery.ScalarQueryParameter("age", "STRING", age),
+            bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
+            bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
+            bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
+        ]
+    )
 
-# Requête SQL pour les départements Top 4 et Bottom 4
-sql_cibles = f"""
-SELECT 
-    ps.prev,
-    fp.libelle AS pathologie,
-    d.id AS dept_id,
-    d.nom_dept,
-    ps.annee,
-    ps.sex,
-    ps.age
-FROM `alien-oarlock-428016-f3.french_cpam.patient_stat` AS ps
-JOIN `alien-oarlock-428016-f3.french_cpam.filtered_patho` AS fp
-    ON ps.patho_id = fp.id
-JOIN `alien-oarlock-428016-f3.french_cpam.dept` AS d
-    ON ps.dept_id = d.id
-WHERE ps.annee BETWEEN @start_year AND @end_year
-    AND ps.age = @age
-    AND ps.sex = @sexe
-    AND fp.id = @cancer_id
-    AND d.nom_dept IN UNNEST(@departements_cibles)
-    AND d.id != "999"
-ORDER BY ps.annee, d.nom_dept;
-"""
+    # Exécution de la requête et récupération des données
+    return client.query(sql_query, job_config=job_config).to_dataframe()
 
-# Préparer les paramètres de la requête
-job_config_cibles = bigquery.QueryJobConfig(
-    query_parameters=[
-        bigquery.ScalarQueryParameter("start_year", "INT64", 2015),
-        bigquery.ScalarQueryParameter("end_year", "INT64", 2022),
-        bigquery.ScalarQueryParameter("age", "STRING", age),
-        bigquery.ScalarQueryParameter("sexe", "INT64", sexe),
-        bigquery.ScalarQueryParameter("cancer_id", "STRING", cancer_id),
-        bigquery.ArrayQueryParameter("departements_cibles", "STRING", departements_cibles)
-    ]
-)
-
-# Exécuter la requête et récupérer les données dans un dataframe
-df_cibles = client.query(sql_cibles, job_config=job_config_cibles).to_dataframe()
+# Exécution de la fonction pour le cancer spécifique
+df_cibles = get_cancer_data(client, cancer_id, departements_cibles, start_year, end_year, age, sexe)
 
 # Requête SQL pour la prévalence médiane nationale
 sql_moy_med = """
@@ -92,13 +95,13 @@ df_moy_med = client.query(sql_moy_med, job_config=job_config_moy_med).to_datafra
 # Fusionner les données des départements ciblés avec les médianes nationales
 df_final = df_cibles.merge(df_moy_med, on='annee')
 
-# Ajouter une colonne pour identifier Top 4 et Bottom 4
+# Ajouter une colonne pour identifier Top 5 et Bottom 5
 df_final['groupe'] = df_final['nom_dept'].apply(
-    lambda x: 'Top 4' if x in departements_top4 else ('Bottom 4' if x in departements_bottom4 else 'Other')
+    lambda x: 'Top 5' if x in departements_top5 else ('Bottom 5' if x in departements_bottom5 else 'Other')
 )
 
-# Filtrer uniquement Top 4 et Bottom 4
-df_final = df_final[df_final['groupe'].isin(['Top 4', 'Bottom 4'])]
+# Filtrer uniquement Top 5 et Bottom 5
+df_final = df_final[df_final['groupe'].isin(['Top 5', 'Bottom 5'])]
 
 # Préparer les données pour la visualisation
 # Inclure les médianes nationales comme lignes supplémentaires
@@ -107,7 +110,7 @@ median_median['nom_dept'] = 'Prévalence médiane nationale'
 median_median['prev'] = median_median['prev_med']
 median_median['groupe'] = 'Médiane'
 
-# Combiner avec Top 4 et Bottom 4
+# Combiner avec Top 5 et Bottom 5
 df_visual = pd.concat([df_final, median_median], ignore_index=True)
 
 # Définir une palette de couleurs percutantes
@@ -123,8 +126,8 @@ color_dict['Prévalence médiane nationale'] = 'black'
 plt.figure(figsize=(14, 8))
 sns.set(style="whitegrid")
 
-# Tracer les lignes pour les départements Top 4 et Bottom 4
-departements_to_plot = df_visual[df_visual['groupe'].isin(['Top 4', 'Bottom 4'])]['nom_dept'].unique()
+# Tracer les lignes pour les départements Top 5 et Bottom 5
+departements_to_plot = df_visual[df_visual['groupe'].isin(['Top 5', 'Bottom 5'])]['nom_dept'].unique()
 
 for dept in departements_to_plot:
     dept_data = df_visual[df_visual['nom_dept'] == dept]
@@ -148,7 +151,7 @@ plt.plot(
     linewidth=2
 )
 
-# Ajouter des annotations pour Top 4 et Bottom 4 en 2022 avec un angle plus doux (30 degrés)
+# Ajouter des annotations pour Top 5 et Bottom 5 en 2022 avec un angle plus doux (30 degrés)
 for dept in departements_to_plot:
     dept_data = df_visual[(df_visual['nom_dept'] == dept) & (df_visual['annee'] == 2022)]
     if not dept_data.empty:
@@ -173,14 +176,14 @@ labels_depts = labels[:-1]
 handle_med = handles[-1:]
 label_med = labels[-1:]
 
-# Créer une légende pour les départements avec 4 colonnes
+# Créer une légende pour les départements avec 5 colonnes
 legend_depts = plt.legend(
     handles_depts, 
     labels_depts, 
     title='Départements',
-    bbox_to_anchor=(0.3, -0.2),  # Positionner la légende en bas à gauche
+    bbox_to_anchor=(0.3, -0.1),  # Positionner la légende en bas à gauche
     loc='upper center',
-    ncol=4,  # 4 colonnes pour Top 4 et Bottom 4
+    ncol=5,  # 5 colonnes pour Top 5 et Bottom 5
     frameon=False
 )
 
@@ -188,8 +191,8 @@ legend_depts = plt.legend(
 plt.legend(
     handle_med, 
     label_med, 
-    title='Statistiques nationales',
-    bbox_to_anchor=(0.7, -0.2),  # Positionner la légende en bas à droite
+    # title='Statistiques nationales',
+    bbox_to_anchor=(0.8, -0.2),  # Positionner la légende en bas à droite
     loc='upper center',
     frameon=False
 )
@@ -200,8 +203,8 @@ plt.gca().add_artist(legend_depts)
 # Ajouter des labels et titres
 plt.xlabel('Année')
 plt.ylabel('Prévalence')
-plt.title('Évolution de la prévalence du cancer de la prostate dans les départements "Top 4" et "Bottom 4" de 2015 à 2022')
-plt.xticks(annees)
+plt.title("Prévalence du cancer de la prostate dans les départements les plus et les moins affectés, de 2015 à 2022")
+plt.xticks(range(start_year, end_year + 1))
 plt.grid(True)
 plt.tight_layout()
 
